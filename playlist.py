@@ -7,6 +7,7 @@ from simpleaudio import play_buffer
 
 class Playlist:
     queue = []
+    unplayed = []
     paused = False
 
     def __reset_player(self):
@@ -19,7 +20,7 @@ class Playlist:
         self.__reset_player()
 
     def __refill(self):
-        self.queue = [ s for s in self.library.index ]
+        self.unplayed = [ s for s in self.library.index ]
 
     def __autonext(self):
         while self.playback != None and self.playback.is_playing():
@@ -33,12 +34,12 @@ class Playlist:
             raise Exception("Can't play while playing")
 
         if self.current == None:
-            if len(self.queue) == 0:
-                self.__refill()
-            # Make the first song the current
-            self.current = self.queue[0]
-            # Remove it from the queue
-            self.queue = self.queue[1:]
+            if len(self.queue) != 0:
+                self.current = self.queue.pop(0)
+            else:
+                if len(self.unplayed) == 0:
+                    self.__refill()
+                self.current = self.unplayed.pop(0)
 
         # Unpause
         self.paused = False
@@ -74,6 +75,7 @@ class Playlist:
 
     def shuffle(self):
         random.shuffle(self.queue)
+        random.shuffle(self.unplayed)
 
     def skip(self):
         self.stop()
