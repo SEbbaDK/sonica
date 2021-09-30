@@ -1,14 +1,8 @@
-from dataclasses import dataclass
 import os
 
 import taglib
 
-@dataclass
-class Song:
-    filename: str
-    title: str
-    artist: str
-    tags: list
+from song import Song
 
 class Library:
     def __init__(self, folder: str):
@@ -24,7 +18,6 @@ class Library:
         for (pathname, folders, files) in os.walk(self.base):
             for filename in files:
                 path = pathname + "/" + filename
-                print(path)
                 f = taglib.File(path)
                 s = Song(path, f.tags['TITLE'][0], f.tags['ARTIST'][0], f.tags['TAGS'])
                 new_index.append(s)
@@ -35,9 +28,9 @@ class Library:
     def search(self, query: str):
         q = query.lower()
         return [
-        	s for s in self.index
-        	if q in s.title.lower() or q in s.artist.lower()
-    	]
+            s for s in self.index
+            if q in s.title.lower() or q in s.artist.lower()
+        ]
 
     def all_tags(self):
         return set(sum([ s.tags for s in self.index ], []))
