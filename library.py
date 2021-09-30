@@ -1,27 +1,44 @@
+from dataclasses import dataclass
 import os
 
-from mediafile import MediaFile
+import taglib
 
-from song import Song
+@dataclass
+class Song:
+    filename: str
+    title: str
+    artist: str
+    tags: list
 
 class Library:
     def __init__(self, folder: str):
         self.base = folder
         self.current_set = None
         self.index = []
+        self.size = 0
+
         self.reindex()
 
     def reindex(self):
-        for (name, folders, files) in os.walk(self.base):
-            for f in files:
-                path = name + "/" + f
+        new_index = []
+        for (pathname, folders, files) in os.walk(self.base):
+            for filename in files:
+                path = pathname + "/" + filename
                 print(path)
-                m = MediaFile(path)
-                print(sorted([f for f in m.fields()]))
-                m.update({ 'tags': ['test', 'test2'] })
-                m.save()
+                f = taglib.File(path)
+                s = Song(path, f.tags['TITLE'][0], f.tags['ARTIST'][0], f.tags['TAGS'])
+                new_index.append(s)
+        self.size = len(new_index)
+        self.index = new_index
 
 
     def search(self, query: str):
-        return []
+        q = query.lower()
+        return [
+        	s for s in self.index
+        	if q in s.title.lower() or q in s.artist.lower()
+    	]
+
+    def all_tags(self):
+        return set(sum([ s.tags for s in self.index ], []))
 

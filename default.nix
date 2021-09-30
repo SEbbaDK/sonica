@@ -14,7 +14,7 @@ mkDerivation {
 			discordpy
 			playsound
 			deemix
-			mediafile
+			pytaglib
 		]))
 	];
 }

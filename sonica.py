@@ -25,25 +25,24 @@ class EnumeratedOption:
 enumerators = {}
 
 async def handle_music_message(message):
-    print("Music message")
-    if message.content.startswith("play "):
-        query = message.content[len("play "):]
-        search = library.search(query)
-        lines = [ f"**{song['title']}** by *{song['artist']['name']}*" for song in search ]
-        message = f"Search returned {len(search)} results\n" + "\n".join(lines)
-        return await message.channel.send()
-    if message.content.startswith("deez "):
-        query = message.content[len("deez "):]
-        search = dz.api.search(query)['data']
-        lines = [ f"**{song['title']}** by *{song['artist']['name']}*" for song in search ]
-        message = f"Search returned {len(search)} results\n" + "\n".join(lines)
-        return await message.channel.send()
-    if message.content.startswith("yt "):
-        query = message.content[len("yt "):]
-        search = YoutubeSearch(query).videos
-        lines = [ f"**{video['title']}** by *{video['channel']}*" for video in search ]
-        message = f"Search returned {len(search)} results\n" + "\n".join(lines)
-        return await message.channel.send(message)
+    def line(title, artist):
+        return f"**{title}** by *{artist}*"
+    def show(count, lines):
+        return f"Search returned {count} results\n" + "\n".join(lines)
+    async def search(command, search_func, get_title, get_artist):
+        if message.content.startswith(command + " "):
+            query = message.content[len(command)+1:]
+            results = search_func(query)
+            lines = [ line(get_title(item), get_artist(item)) for item in results ]
+            text = show(len(results), lines)
+            return await message.channel.send(text)
+
+    await search("play", library.search,
+        lambda i: i.title, lambda i: i.artist)
+    await search("deez", lambda q: dz.api.search(q)['data'],
+        lambda i: i['title'], lambda i: i['artist']['name'])
+    await search("yt", lambda q: YoutubeSearch(q).videos,
+        lambda i: i['title'], lambda i: i['channel'])
 
 @client.event
 async def on_ready():
@@ -66,6 +65,7 @@ def main(api: str, deez_arl: str = None, folder: str = "music"):
         dz = Deezer()
         dz.login_via_arl(deez_arl)
     library = Library(folder)
+    print(f"Library contains {library.size} songs")
     client.run(api)
 
 typer.run(main)
