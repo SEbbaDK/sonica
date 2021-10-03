@@ -1,53 +1,46 @@
 #!/usr/bin/env python
 
-from dataclasses import dataclass
-
 import typer
 import discord
-import deemix
-from deezer import Deezer
-from youtube_dl import YoutubeDL
-from youtube_search import YoutubeSearch
 
 from library import Library
 from playlist import Playlist
+from players import LibraryPlayer, DeezPlayer, YoutubePlayer
 
 library = None
 playlist = None
 client = discord.Client()
-ytdl = YoutubeDL()
-deezer = None
+players = []
 
-@dataclass
 class EnumeratedOption:
-    options = []
-    type = None
+    options = {}
+    def __init__(self, options):
+        self.options = options
+    def is_an_option(self, string: str):
+        return string in self.options.keys()
 
 enumerators = {}
 
 async def handle_music_message(message):
-    async def search(command, search_func, get_title_and_artist):
-        query = message.content[len(command):]
-        results = search_func(query)
-        top_results = map(get_title_and_artist, results[0:10])
-        lines = [
-            f"{index+1}: **{title}** by *{artist}*"
-        	for index, (title, artist) in enumerate(top_results)
-        ]
-        text = f"Search returned {len(results)} results\n" + "\n".join(lines)
-        await message.channel.send(text)
+    global players, enumerators, playlist, library
+    for player in players:
+        if player.is_command(message.content):
+            results = player.search(player.strip_command(message.content))
 
-    if message.content.startswith("play "):
-        return await search("play ", library.search,
-            lambda i: (i.title, i.artist))
+            text = "I found a bunch of songs:\n" + "\n".join([
+                f"{index + 1}: {song}" for (index, song) in enumerate(results)
+            ])
 
-    if message.content.startswith("deez "):
-        return await search("deez ", lambda q: dz.api.search(q)['data'],
-            lambda i: (i['title'], i['artist']['name']))
+            def enqueue_songchoice(songchoice):
+                filename = songchoice.get_filename()
+                song = library.get_song(filename)
+                playlist.enqueue(song)
+            enumerators[message.channel.id] = EnumeratedOption({
+                str(index + 1): lambda: enqueue_songchoice(songchoice)
+                for (index, songchoice) in enumerate(results)
+            })
 
-    if message.content.startswith("yt "):
-        return await search("yt ", lambda q: YoutubeSearch(q).videos,
-            lambda i: (i['title'], i['channel']))
+            return await message.channel.send(text)
 
     async def try_command(func, else_message, runIfPlaying = True):
         global playlist
@@ -56,7 +49,6 @@ async def handle_music_message(message):
         else:
             await message.channel.send(else_message)
 
-    global playlist
     if message.content == "skip":
         return await try_command(playlist.skip, "I can't skip if i am not playing TwT")
     if message.content == "stop":
@@ -64,12 +56,21 @@ async def handle_music_message(message):
     if message.content == "play":
         return await try_command(playlist.play, "I'm already playing!!", runIfPlaying = False)
 
-    try:
-        index = int(message.content) - 1 # We add show them 1-indexed
-        return await message.channel.send(f"I will try playing {index}")
-    except Exception:
-        pass
+    if message.content == "playlist" or message.content == "queue":
+        if len(playlist.queue) == 0:
+            if playlist.current == None:
+                return await message.channel.send("No songs in queue yet :3")
+            else:
+                return await message.channel.send("I'm playing " + str(playlist.current) + " but I've nothing queued up")
+        else:
+            return await message.channel.send("\n".join([
+                "Right now i'm playing " + str(playlist.current) + " and next I'll play:",
+                "\n".join([ str(s) for s in playlist.queue ]),
+            ]))
 
+    if enumerators[message.channel.id].is_an_option(message.content):
+        enumerators[message.channel.id].options[message.content]()
+        del enumerators[message.channel.id]
 
 @client.event
 async def on_ready():
@@ -80,21 +81,22 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    print(str(message) + ": '" + message.content + "'")
+    #print(str(message) + ": '" + message.content + "'")
 
     if "music" in message.channel.name or "musik" in message.channel.name:
         await handle_music_message(message)
 
 
 def main(api: str, deez_arl: str = None, folder: str = "music"):
-    global library, playlist, dz
-    if deez_arl != None:
-        dz = Deezer()
-        dz.login_via_arl(deez_arl)
+    global library, playlist, players
     library = Library(folder)
-    print(f"Library contains {library.size} songs")
+    print(f"Library contains {library.size()} songs")
     playlist = Playlist(library)
     # playlist.play()
+    players = [
+        LibraryPlayer(library),
+        YoutubePlayer(),
+    ] + ([ DeezPlayer(deez_arl) ] if deez_arl != None else [])
     client.run(api)
 
 typer.run(main)

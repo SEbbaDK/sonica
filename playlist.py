@@ -5,13 +5,15 @@ from time import time, sleep
 from pydub import AudioSegment
 from simpleaudio import play_buffer
 
+from song import Song
+
 class Playlist:
-    queue = []
-    unplayed = []
+    current: Song = None
+    queue: list[Song] = []
+    unplayed: list[Song] = []
     paused = False
 
     def __reset_player(self):
-        self.current = None
         self.play_start = None
         self.playback = None
 
@@ -26,6 +28,7 @@ class Playlist:
         while self.playback != None and self.playback.is_playing():
             sleep(0.25)
         if not self.paused:
+            self.current = None
             self.__reset_player()
             self.play()
 
@@ -70,14 +73,23 @@ class Playlist:
         if self.playback == None:
             raise Exception("Cannot stop playing when already stopped")
         self.playback.stop()
-        self.__reset_player()
         self.paused = True
+        self.__reset_player()
 
     def shuffle(self):
         random.shuffle(self.queue)
         random.shuffle(self.unplayed)
 
     def skip(self):
+        was_playing = self.is_playing()
         self.stop()
-        self.play()
+        self.current = self.queue.pop(0) if len(self.queue) != 0 else None
+        if was_playing:
+            self.play()
+
+    def enqueue(self, song):
+        if len(self.queue) == 0 and self.current == None:
+            self.current = song
+        else:
+            self.queue.append(song)
 
