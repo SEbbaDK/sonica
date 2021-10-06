@@ -27,7 +27,7 @@ class Playlist:
     def __autonext(self):
         while self.playback != None and self.playback.is_playing():
             sleep(0.25)
-        if not self.paused:
+        if self.playback != None and not self.paused:
             self.current = None
             self.__reset_player()
             self.play()

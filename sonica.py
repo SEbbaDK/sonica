@@ -25,18 +25,22 @@ async def handle_music_message(message):
     global players, enumerators, playlist, library
     for player in players:
         if player.is_command(message.content):
-            results = player.search(player.strip_command(message.content))
+            query = player.strip_command(message.content)
+            results = player.search(query)
+
+            if len(results) == 0:
+                return await message.channel.send('Couldn\'t find anything named »' + query + '« there :thinking:')
 
             text = "I found a bunch of songs:\n" + "\n".join([
                 f"{index + 1}: {song}" for (index, song) in enumerate(results)
             ])
 
-            def enqueue_songchoice(songchoice):
-                filename = songchoice.get_filename()
-                song = library.get_song(filename)
+            def enqueue(path):
+                song = library.get_song(path)
                 playlist.enqueue(song)
+
             enumerators[message.channel.id] = EnumeratedOption({
-                str(index + 1): lambda: enqueue_songchoice(songchoice)
+                str(index + 1): lambda: songchoice.choose(enqueue)
                 for (index, songchoice) in enumerate(results)
             })
 
@@ -68,13 +72,36 @@ async def handle_music_message(message):
                 "\n".join([ str(s) for s in playlist.queue ]),
             ]))
 
-    if enumerators[message.channel.id].is_an_option(message.content):
-        enumerators[message.channel.id].options[message.content]()
+    channel_enum = enumerators[message.channel.id]
+    if channel_enum.is_an_option(message.content):
+        channel_enum.options[message.content]()
         del enumerators[message.channel.id]
 
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
+
+help_message():
+    global players
+	return "\n".join([
+    	"Okiii :3",
+    	"**BASIC:**",
+		"  **help**      This command",
+		"  **play**      Start playing current song",
+		"  **stop**      Stop playing current song",
+		"  **skip**      Skip current song",
+		"  **<option>**  Select one of the options",
+		"  **changelog** Show the changelog",
+		"**PLAYERS:**",
+    ] + [
+		f"  **{player.command}** <search query>\t{player.description}"
+		for player in players
+    ])
+
+changelog_message():
+    return "\n".join([
+    	"v0.1  *Basic deez downloading and playing",
+	])
 
 @client.event
 async def on_message(message):
@@ -83,8 +110,16 @@ async def on_message(message):
 
     #print(str(message) + ": '" + message.content + "'")
 
+    if message.content == "help":
+        return await message.channel.send(help_message())
+    if message.content == "changelog":
+        return await message.channel.send(changelog_message())
+
     if "music" in message.channel.name or "musik" in message.channel.name:
-        await handle_music_message(message)
+        try:
+            await handle_music_message(message)
+        except Exception as e:
+            await message.channel.send("I did an error :(\n```\n" + str(e) + "\n```")
 
 
 def main(api: str, deez_arl: str = None, folder: str = "music"):
@@ -95,7 +130,7 @@ def main(api: str, deez_arl: str = None, folder: str = "music"):
     # playlist.play()
     players = [
         LibraryPlayer(library),
-        YoutubePlayer(),
+        #YoutubePlayer(),
     ] + ([ DeezPlayer(deez_arl) ] if deez_arl != None else [])
     client.run(api)
 

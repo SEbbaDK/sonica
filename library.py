@@ -34,11 +34,19 @@ class Library:
 
     def index_file(self, path):
         f = taglib.File(path)
-        self.index.append(Song(path, f.tags['TITLE'][0], f.tags['ARTIST'][0], f.tags['TAGS']))
+        song = Song(
+            path,
+            f.tags['TITLE'][0],
+            f.tags['ARTIST'][0],
+            f.tags['TAGS'] if 'TAGS' in f.tags else []
+        )
+        self.index.append(song)
+        return song
 
     def get_song(self, path):
         for s in self.index:
             if s.path == path:
                 return s
+        return self.index_file(path)
         raise Exception("No song with path: " + path)
 
