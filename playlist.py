@@ -93,3 +93,5 @@ class Playlist:
         else:
             self.queue.append(song)
 
+    def enqueue_file(self, path):
+        self.enqueue(self.library.get_song(path))

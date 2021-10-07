@@ -5,7 +5,7 @@ import discord
 
 from library import Library
 from playlist import Playlist
-from players import LibraryPlayer, DeezPlayer, YoutubePlayer
+from players import LibraryPlayer, DeezPlayer#, YoutubePlayer
 
 library = None
 playlist = None
@@ -29,20 +29,27 @@ async def handle_music_message(message):
             results = player.search(query)
 
             if len(results) == 0:
-                return await message.channel.send('Couldn\'t find anything named »' + query + '« there :thinking:')
+                return await message.channel.send(
+                    f'Couldn\'t find anything named »{query}« there :thinking:'
+                )
+
+            def callback(songchoice):
+                async def func(channel):
+                    await channel.send(f"I'll queue {songchoice}")
+                    songchoice.choose(playlist.enqueue_file)
+                return func
+
+            options = {
+                str(index + 1): callback(songchoice)
+                for index, songchoice in enumerate(results)
+            }
+
+            enumerators[message.channel.id] = EnumeratedOption(options)
 
             text = "I found a bunch of songs:\n" + "\n".join([
-                f"{index + 1}: {song}" for (index, song) in enumerate(results)
+                f"{index + 1}: {songchoice}"
+                for index, songchoice in enumerate(results)
             ])
-
-            def enqueue(path):
-                song = library.get_song(path)
-                playlist.enqueue(song)
-
-            enumerators[message.channel.id] = EnumeratedOption({
-                str(index + 1): lambda: songchoice.choose(enqueue)
-                for (index, songchoice) in enumerate(results)
-            })
 
             return await message.channel.send(text)
 
@@ -74,34 +81,36 @@ async def handle_music_message(message):
 
     channel_enum = enumerators[message.channel.id]
     if channel_enum.is_an_option(message.content):
-        channel_enum.options[message.content]()
+        await channel_enum.options[message.content](message.channel)
         del enumerators[message.channel.id]
+        return
 
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
 
-help_message():
+def help_message():
     global players
-	return "\n".join([
-    	"Okiii :3",
-    	"**BASIC:**",
-		"  **help**      This command",
-		"  **play**      Start playing current song",
-		"  **stop**      Stop playing current song",
-		"  **skip**      Skip current song",
-		"  **<option>**  Select one of the options",
-		"  **changelog** Show the changelog",
-		"**PLAYERS:**",
+    return "\n".join([
+        "Okiii :3",
+        "**BASIC:**",
+        "  **help**      This command",
+        "  **play**      Start playing current song",
+        "  **stop**      Stop playing current song",
+        "  **skip**      Skip current song",
+        "  **<option>**  Select one of the options",
+        "  **changelog** Show the changelog",
+        "**PLAYERS:**",
     ] + [
-		f"  **{player.command}** <search query>\t{player.description}"
-		for player in players
+        f"  **{player.command}** <search query>\t{player.description}"
+        for player in players
     ])
 
-changelog_message():
+def changelog_message():
     return "\n".join([
-    	"v0.1  *Basic deez downloading and playing",
-	])
+        "Heres my personal history :D",
+        "v0.1  *Basic deez downloading and playing",
+    ])
 
 @client.event
 async def on_message(message):
@@ -120,6 +129,7 @@ async def on_message(message):
             await handle_music_message(message)
         except Exception as e:
             await message.channel.send("I did an error :(\n```\n" + str(e) + "\n```")
+            raise e
 
 
 def main(api: str, deez_arl: str = None, folder: str = "music"):
