@@ -98,6 +98,8 @@ def help_message():
         "  **play**      Start playing current song",
         "  **stop**      Stop playing current song",
         "  **skip**      Skip current song",
+        "  **queue**     Displays current queue of songs",
+        "  **playlist**  Ditto",
         "  **<option>**  Select one of the options",
         "  **changelog** Show the changelog",
         "**PLAYERS:**",
@@ -124,12 +126,16 @@ async def on_message(message):
     if message.content == "changelog":
         return await message.channel.send(changelog_message())
 
-    if "music" in message.channel.name or "musik" in message.channel.name:
-        try:
-            await handle_music_message(message)
-        except Exception as e:
-            await message.channel.send("I did an error :(\n```\n" + str(e) + "\n```")
-            raise e
+    music_only_commands = ["play", "stop", "skip", "queue", "playlist"] + [player.command for player in players]
+    if message.content.startswith(tuple(music_only_commands)):
+        if any(music in message.channel.name for music in ["music", "musik"]):
+            try:
+                await handle_music_message(message)
+            except Exception as e:
+                await message.channel.send("I did an error :(\n```\n" + str(e) + "\n```")
+                raise e
+        else:
+            return await message.channel.send("This command only works in a music channel! UnU")
 
 
 def main(api: str, deez_arl: str = None, folder: str = "music"):
