@@ -22,7 +22,9 @@ class Playlist:
         self.__reset_player()
 
     def __refill(self):
-        self.unplayed = [ s for s in self.library.index ]
+        next_library = [s for s in self.library.index]
+        random.shuffle(next_library)
+        self.unplayed += next_library
 
     def __autonext(self):
         while self.playback != None and self.playback.is_playing():
@@ -87,7 +89,7 @@ class Playlist:
         if was_playing:
             self.play()
 
-    def enqueue(self, song):
+    def enqueue(self, song: Song):
         if len(self.queue) == 0 and self.current == None:
             self.current = song
         else:
@@ -95,3 +97,8 @@ class Playlist:
 
     def enqueue_file(self, path):
         self.enqueue(self.library.get_song(path))
+
+    def get_unplayed(self, amount: int = 3):
+        if len(self.unplayed) < amount:
+            self.__refill()
+        return "\n".join([str(song) for song in self.unplayed[:amount]])
