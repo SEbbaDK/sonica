@@ -81,9 +81,11 @@ async def handle_music_message(message):
 
     if message.content == "shuffle":
         playlist.shuffle()
+        return await message.channel.send("Queue shuffled!")
 
-    if message.content == "shuffle":
+    if message.content == "shuffleall":
         playlist.shuffleall()
+        return await message.channel.send("Queue and backlog shuffled!")
 
     channel_enum = enumerators[message.channel.id]
     if channel_enum.is_an_option(message.content):
@@ -134,16 +136,16 @@ async def on_message(message):
     if message.content == "changelog":
         return await message.channel.send(changelog_message())
 
-    music_only_commands = ["play", "stop", "skip", "queue", "playlist", "shuffle"] + [player.command for player in players]
-    if message.content.startswith(tuple(music_only_commands)):
-        if any(music in message.channel.name for music in ["music", "musik"]):
-            try:
-                await handle_music_message(message)
-            except Exception as e:
-                await message.channel.send("I did an error :(\n```\n" + str(e) + "\n```")
-                raise e
-        else:
-            return await message.channel.send("This command only works in a music channel! UnU")
+    music_only_commands = ["play", "stop", "skip", "queue", "playlist", "shuffle", "shuffleall"]
+    player_commands = [player.command for player in players]
+    if any(music in message.channel.name for music in ["music", "musik"]):
+        try:
+            await handle_music_message(message)
+        except Exception as e:
+            await message.channel.send("I did an error :(\n```\n" + str(e) + "\n```")
+            raise e
+    elif message.content in music_only_commands or message.content.startswith(tuple(player_commands)):
+        return await message.channel.send("This command only works in a music channel! UnU")
 
 
 def main(api: str, deez_arl: str = None, folder: str = "music"):
