@@ -2,7 +2,7 @@
 typer
 
 # Discord bot lib
-discordpy
+discord.py
 
 # Loading from youtube
 #youtube-dl
