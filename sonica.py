@@ -5,7 +5,7 @@ import discord
 
 from library import Library
 from playlist import Playlist
-from players import LibraryPlayer, DeezPlayer#, YoutubePlayer
+from players import LibraryPlayer, DeezPlayer  # , YoutubePlayer
 
 library = None
 playlist = None
@@ -15,13 +15,16 @@ players = []
 
 class EnumeratedOption:
     options = {}
+
     def __init__(self, options):
         self.options = options
+
     def is_an_option(self, string: str):
         return string in self.options.keys()
 
 
 enumerators = {}
+
 
 async def handle_music_message(message):
     global players, enumerators, playlist, library
@@ -55,7 +58,7 @@ async def handle_music_message(message):
 
             return await message.channel.send(text)
 
-    async def try_command(func, else_message, runIfPlaying = True):
+    async def try_command(func, else_message, runIfPlaying=True):
         global playlist
         if runIfPlaying == playlist.is_playing():
             func()
@@ -67,19 +70,23 @@ async def handle_music_message(message):
     if message.content == "stop":
         return await try_command(playlist.stop, "I'm not playing anything you dummy >\:(")
     if message.content == "play":
-        return await try_command(playlist.play, "I'm already playing!!", runIfPlaying = False)
+        return await try_command(playlist.play, "I'm already playing!!", runIfPlaying=False)
 
-    if message.content == "playlist" or message.content == "queue":
-        if len(playlist.queue) == 0:
-            if playlist.current == None:
-                return await message.channel.send("No songs in queue yet :3")
-            else:
-                return await message.channel.send("I'm playing " + str(playlist.current) + " but I've nothing queued up")
+    if message.content in ["playlist", "queue", "current", "playing", "now"]:
+        return_message = ""
+        if playlist.current is None:
+            return_message = "I'm not playing anything. Start me up! UwU"
         else:
-            return await message.channel.send("\n".join([
-                "Right now i'm playing " + str(playlist.current) + " and next I'll play:",
-                "\n".join([str(s) for s in playlist.queue]),
-            ]))
+            return_message = "I'm playing " + str(playlist.current)
+            if len(playlist.queue) == 0:
+                return_message += ", but I've nothing requested queued up"
+            else:
+                return_message += ", and next I'll play:\n"
+                return_message += "\n".join([str(song) for song in playlist.queue])
+            return_message += "\n\n"  # Add a full newline between potential queue and the autoplay
+            return_message += "Coming up next from autoplay:\n"
+            return_message += playlist.get_unplayed(5)
+        return await message.channel.send(return_message)
 
     channel_enum = enumerators[message.channel.id]
     selection = message.content.split(" ")
@@ -95,9 +102,11 @@ async def handle_music_message(message):
         del enumerators[message.channel.id]
         return
 
+
 @client.event
 async def on_ready():
     print(f"Logged in as {client.user}")
+
 
 def help_message():
     global players
@@ -116,11 +125,13 @@ def help_message():
         for player in players
     ])
 
+
 def changelog_message():
     return "\n".join([
         "Heres my personal history :D",
         "v0.1  *Basic deez downloading and playing",
     ])
+
 
 @client.event
 async def on_message(message):
@@ -151,7 +162,8 @@ def main(api: str, deez_arl: str = None, folder: str = "music"):
     players = [
         LibraryPlayer(library),
         #YoutubePlayer(),
-    ] + ([ DeezPlayer(deez_arl) ] if deez_arl != None else [])
+    ] + ([DeezPlayer(deez_arl)] if deez_arl != None else [])
     client.run(api)
+
 
 typer.run(main)
