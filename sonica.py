@@ -40,8 +40,8 @@ async def handle_music_message(message):
 
             def callback(songchoice):
                 async def func(channel):
-                    await channel.send(f"I'll queue {songchoice}")
                     songchoice.choose(playlist.enqueue_file)
+                    return f"I've queued {songchoice}"
                 return func
 
             options = {
@@ -89,8 +89,16 @@ async def handle_music_message(message):
         return await message.channel.send(return_message)
 
     channel_enum = enumerators[message.channel.id]
-    if channel_enum.is_an_option(message.content):
-        await channel_enum.options[message.content](message.channel)
+    selection = message.content.split(" ")
+    if all(channel_enum.is_an_option(x) for x in selection):
+        async with message.channel.typing():
+            # Always at least 1 selection
+            complete_message = await channel_enum.options[selection[0]](message.channel)
+            # Then get the rest. If there are no more, nothing happens
+            for select in selection[1:]:
+                complete_message += "\n"
+                complete_message += await channel_enum.options[select](message.channel)
+            await message.channel.send(complete_message)
         del enumerators[message.channel.id]
         return
 
