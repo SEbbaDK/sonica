@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
+from _typeshed import OpenTextMode
 import typer
 import discord
 
 from library import Library
 from playlist import Playlist
-from players import LibraryPlayer, DeezPlayer#, YoutubePlayer
+from players import LibraryPlayer, DeezPlayer, SongChoice#, YoutubePlayer
 
 library = None
 playlist = None
@@ -46,10 +47,13 @@ async def handle_music_message(message):
 
             enumerators[message.channel.id] = EnumeratedOption(options)
 
-            text = "I found a bunch of songs:\n" + "\n".join([
-                f"{index + 1}: {songchoice}"
-                for index, songchoice in enumerate(results)
-            ])
+            if len(options) == 1:
+                callback(1)
+            else:
+                text = "I found a bunch of songs:\n" + "\n".join([
+                    f"{index + 1}: {songchoice}"
+                    for index, songchoice in enumerate(results)
+                ])
 
             return await message.channel.send(text)
 
