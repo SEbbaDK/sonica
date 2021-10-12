@@ -80,6 +80,9 @@ class Playlist:
 
     def shuffle(self):
         random.shuffle(self.queue)
+
+    def shuffleall(self):
+        random.shuffle(self.queue)
         random.shuffle(self.unplayed)
 
     def skip(self):

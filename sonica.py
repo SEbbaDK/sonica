@@ -88,6 +88,14 @@ async def handle_music_message(message):
             return_message += playlist.get_unplayed(5)
         return await message.channel.send(return_message)
 
+    if message.content == "shuffle":
+        playlist.shuffle()
+        return await message.channel.send("Queue shuffled!")
+
+    if message.content == "shuffleall":
+        playlist.shuffleall()
+        return await message.channel.send("Queue and backlog shuffled!")
+
     channel_enum = enumerators[message.channel.id]
     selection = message.content.split(" ")
     if all(channel_enum.is_an_option(x) for x in selection):
@@ -117,6 +125,10 @@ def help_message():
         "  **play**      Start playing current song",
         "  **stop**      Stop playing current song",
         "  **skip**      Skip current song",
+        "  **queue**     Displays current queue of songs",
+        "  **playlist**  Ditto",
+        "  **shuffle**   Shuffles the current queue",
+        "  **shuffleall** Shuffles the current queue AND backlog",
         "  **<option>**  Select one of the options",
         "  **changelog** Show the changelog",
         "**PLAYERS:**",
@@ -145,7 +157,9 @@ async def on_message(message):
     if message.content == "changelog":
         return await message.channel.send(changelog_message())
 
-    if "music" in message.channel.name or "musik" in message.channel.name:
+    music_only_commands = ["play", "stop", "skip", "queue", "playlist", "shuffle", "shuffleall"]
+    player_commands = [player.command for player in players]
+    if any(music in message.channel.name for music in ["music", "musik"]):
         try:
             await handle_music_message(message)
         except Exception as e:
