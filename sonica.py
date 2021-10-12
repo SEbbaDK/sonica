@@ -144,8 +144,6 @@ async def on_message(message):
         except Exception as e:
             await message.channel.send("I did an error :(\n```\n" + str(e) + "\n```")
             raise e
-    elif message.content in music_only_commands or message.content.startswith(tuple(player_commands)):
-        return await message.channel.send("This command only works in a music channel! UnU")
 
 
 def main(api: str, deez_arl: str = None, folder: str = "music"):
