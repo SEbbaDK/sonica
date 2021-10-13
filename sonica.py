@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from _typeshed import OpenTextMode
 import typer
 import discord
 
