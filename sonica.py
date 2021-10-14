@@ -5,7 +5,7 @@ import discord
 
 from library import Library
 from playlist import Playlist
-from players import LibraryPlayer, DeezPlayer, SongChoice#, YoutubePlayer
+from players import LibraryPlayer, DeezPlayer #, YoutubePlayer
 
 
 library = None
