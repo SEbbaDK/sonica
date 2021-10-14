@@ -27,15 +27,21 @@ class EnumeratedOption:
 
 def update_presence(song: Song):
     # Set presence to "Playing [song] by [artist]"
+    # We can't get asyncio to make a new event loop, since we already have one running the bot
+    # So we just request the current one, and if there isn't one (which should be impossible?) we
+    # just quit
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
-        pass
+        return
 
+    # Set up the status message. "Playing " will be prepended to the string
     act = discord.Game(f"{song.title} by {song.artist}")  # "Playing ..."
     # As an alternative, there is also the activity below.
     # listening = discord.ActivityType.listening
     # act = discord.Activity(type=listening, name=f"{song.title} by {song.artist}")  # "Listening to ..."
+    
+    # Send the task to the event loop
     loop.create_task(client.change_presence(activity=act))
 
 
