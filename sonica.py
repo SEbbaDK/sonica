@@ -56,13 +56,16 @@ async def handle_music_message(message):
                 text = "Here you go b-baka!!"
                 await enumerators[message.channel.id].options["1"](message.channel)
                 del enumerators[message.channel.id]
+                await message.channel.send(text)
+                return
             else:
                 text = "I found a bunch of songs:\n" + "\n".join([
                     f"{index + 1}: {songchoice}"
                     for index, songchoice in enumerate(results)
                 ])
+                await message.channel.send(text)
+                return
 
-            return await message.channel.send(text)
 
     async def try_command(func, else_message, runIfPlaying=True):
         global playlist
