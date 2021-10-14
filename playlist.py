@@ -102,7 +102,7 @@ class Playlist:
         if was_playing:
             self.play()
 
-    def enqueue(self, song):
+    def enqueue(self, song: Song):
         if len(self.queue) == 0 and self.current is None:
             self.current = song
         else:
