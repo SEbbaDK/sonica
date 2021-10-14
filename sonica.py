@@ -2,10 +2,12 @@
 
 import typer
 import discord
+import asyncio
 
 from library import Library
 from playlist import Playlist
-from players import LibraryPlayer, DeezPlayer  # , YoutubePlayer
+from players import LibraryPlayer, DeezPlayer#, YoutubePlayer
+from song import Song
 
 library = None
 playlist = None
@@ -21,6 +23,26 @@ class EnumeratedOption:
 
     def is_an_option(self, string: str):
         return string in self.options.keys()
+
+
+def update_presence(song: Song):
+    # Set presence to "Playing [song] by [artist]"
+    # We can't get asyncio to make a new event loop, since we already have one running the bot
+    # So we just request the current one, and if there isn't one (which should be impossible?) we
+    # just quit
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+
+    # Set up the status message. "Playing " will be prepended to the string
+    act = discord.Game(f"{song.title} by {song.artist}")  # "Playing ..."
+    # As an alternative, there is also the activity below.
+    # listening = discord.ActivityType.listening
+    # act = discord.Activity(type=listening, name=f"{song.title} by {song.artist}")  # "Listening to ..."
+    
+    # Send the task to the event loop
+    loop.create_task(client.change_presence(activity=act))
 
 
 enumerators = {}
@@ -177,6 +199,7 @@ def main(api: str, deez_arl: str = None, folder: str = "music"):
         LibraryPlayer(library),
         #YoutubePlayer(),
     ] + ([DeezPlayer(deez_arl)] if deez_arl != None else [])
+    playlist.song_changed_subscribe(update_presence)
     client.run(api)
 
 
