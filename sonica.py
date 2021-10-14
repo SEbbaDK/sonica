@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import typer
+import discord
 from discord.ext import commands
 
 from library import Library
@@ -25,7 +26,7 @@ class EnumeratedOption:
 
 # This acts as the catchall as well (the last command checked)
 enumerators = {}
-@bot.command()
+@bot.command(brief = 'if you enter something i have asked (like 1 or 2)')
 async def try_enumerators(ctx):
     global enumerators
     if not ctx.message.channel.id in enumerators:
@@ -51,19 +52,19 @@ async def try_command(func, else_message, runIfPlaying=True):
     else:
         await message.channel.send(else_message)
 
-@bot.command(name = 'play')
+@bot.command(brief = 'makes me start playing music')
 async def play(ctx):
     return await try_command(playlist.play, "I'm already playing!!", runIfPlaying=False)
 
-@bot.command(name = 'skip')
+@bot.command(brief = 'ill change song if someone asked me to play trash')
 async def skip(ctx):
     return await try_command(playlist.skip, "I can't skip if i am not playing TwT")
 
-@bot.command(name = 'stop')
+@bot.command(brief = 'makes me stop my tunes')
 async def stop(ctx):
     return await try_command(playlist.stop, "I'm not playing anything you dummy >\:(")
 
-@bot.command(name = 'queue', aliases = ['playlist', 'current', 'playing', 'now'])
+@bot.command(aliases = ['playlist', 'current', 'playing', 'now'], brief = 'i can tell you what i\'m playing')
 async def queue(ctx):
     return_message = ''
     if playlist.current is None:
@@ -80,12 +81,12 @@ async def queue(ctx):
         return_message += playlist.get_unplayed(5)
     return await ctx.message.channel.send(return_message)
 
-@bot.command(name = 'shuffle')
+@bot.command(brief = 'i can mix up the playlist')
 async def shuffle(ctx):
     playlist.shuffle()
     return await ctx.message.channel.send("Queue shuffled!")
 
-@bot.command(name = 'shuffleall')
+@bot.command(brief = 'if you need me to mix up my LP collection')
 async def shuffleall(ctx):
     playlist.shuffleall()
     return await ctx.message.channel.send("Queue and backlog shuffled!")
@@ -100,31 +101,9 @@ async def handle_music_message(message):
 async def on_ready():
     print(f"Logged in as {bot.user}")
 
-
-def help_message():
-    global players
-    return "\n".join([
-        "Okiii :3",
-        "**BASIC:**",
-        "  **help**        This command",
-        "  **play**        Start playing current song",
-        "  **stop**        Stop playing current song",
-        "  **skip**        Skip current song",
-        "  **queue**       Displays current queue of songs",
-        "  **playlist**    Ditto",
-        "  **shuffle**     Shuffles the current queue",
-        "  **shuffleall**  Shuffles the current queue AND backlog",
-        "  **<option>**    Select one of the options",
-        "  **changelog**   Show the changelog",
-        "**PLAYERS:**",
-    ] + [
-        f"  **{player.command}** <search query>\t{player.description}"
-        for player in players
-    ])
-
-
-def changelog_message():
-    return "\n".join([
+@bot.command(brief = 'shows my personal history')
+def changelog(ctx):
+    ctx.message.channel.send("\n".join([
         "Heres my personal history :D",
         "v0.1  *Basic deez downloading and playing",
     ])
@@ -174,7 +153,7 @@ def main(api: str, deez_arl: str = None, folder: str = "music"):
         #YoutubePlayer(),
     ] + ([ DeezPlayer(deez_arl) ] if deez_arl != None else [])
     for p in players:
-        c = commands.Command(func = player_command(p), name = p.command)
+        c = commands.Command(func = player_command(p), name = p.command, brief = p.description)
         bot.add_command(c)
     bot.run(api)
 
