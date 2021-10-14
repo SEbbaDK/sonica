@@ -71,7 +71,8 @@ async def handle_music_message(message):
         return await try_command(playlist.stop, "I'm not playing anything you dummy >\:(")
     if message.content == "play":
         return await try_command(playlist.play, "I'm already playing!!", runIfPlaying=False)
-
+    if message.content == "clear":
+        return await try_command(playlist.clear, "I don't have anything queued b-baka >:(")
     if message.content in ["playlist", "queue", "current", "playing", "now"]:
         return_message = ""
         if playlist.current is None:
@@ -126,6 +127,7 @@ def help_message():
         "  **stop**      Stop playing current song",
         "  **skip**      Skip current song",
         "  **queue**     Displays current queue of songs",
+        "  **clear**     Clears the current queue of songs",
         "  **playlist**  Ditto",
         "  **shuffle**   Shuffles the current queue",
         "  **shuffleall** Shuffles the current queue AND backlog",
@@ -157,7 +159,7 @@ async def on_message(message):
     if message.content == "changelog":
         return await message.channel.send(changelog_message())
 
-    music_only_commands = ["play", "stop", "skip", "queue", "playlist", "shuffle", "shuffleall"]
+    music_only_commands = ["play", "stop", "skip", "queue", "clear", "playlist", "shuffle", "shuffleall"]
     player_commands = [player.command for player in players]
     if any(music in message.channel.name for music in ["music", "musik"]):
         try:

@@ -92,6 +92,12 @@ class Playlist:
         if was_playing:
             self.play()
 
+    def clear(self):
+        if len(self.queue) == 0:
+            raise Exception("Cannot clear what is empty")
+        self.queue.clear
+
+
     def enqueue(self, song: Song):
         if len(self.queue) == 0 and self.current == None:
             self.current = song
