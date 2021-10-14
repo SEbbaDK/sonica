@@ -2,6 +2,7 @@
 
 import typer
 import discord
+from discord.ext import commands
 import asyncio
 
 from library import Library
@@ -9,11 +10,11 @@ from playlist import Playlist
 from players import LibraryPlayer, DeezPlayer#, YoutubePlayer
 from song import Song
 
+bot = commands.Bot(command_prefix = '')
+
 library = None
 playlist = None
-client = discord.Client()
 players = []
-
 
 class EnumeratedOption:
     options = {}
@@ -23,7 +24,6 @@ class EnumeratedOption:
 
     def is_an_option(self, string: str):
         return string in self.options.keys()
-
 
 def update_presence(song: Song):
     # Set presence to "Playing [song] by [artist]"
@@ -44,149 +44,122 @@ def update_presence(song: Song):
     # Send the task to the event loop
     loop.create_task(client.change_presence(activity=act))
 
-
+# This acts as the catchall as well (the last command checked)
 enumerators = {}
+@bot.command(brief = 'if you enter something i have asked (like 1 or 2)')
+async def try_enumerators(ctx):
+    global enumerators
+    if not ctx.message.channel.id in enumerators:
+        return
 
+    channel_enum = enumerators[ctx.message.channel.id]
+    selection = ctx.message.content.split(" ")
+    if all(channel_enum.is_an_option(x) for x in selection):
+        async with ctx.message.channel.typing():
+            # Always at least 1 selection
+            complete_message = await channel_enum.options[selection[0]](ctx.message.channel)
+            # Then get the rest. If there are no more, nothing happens
+            for select in selection[1:]:
+                complete_message += "\n"
+                complete_message += await channel_enum.options[select](ctx.message.channel)
+            await ctx.message.channel.send(complete_message)
+        del enumerators[message.channel.id]
+
+async def try_command(func, else_message, runIfPlaying=True):
+    global playlist
+    if runIfPlaying == playlist.is_playing():
+        func()
+    else:
+        await message.channel.send(else_message)
+
+@bot.command(brief = 'makes me start playing music')
+async def play(ctx):
+    return await try_command(playlist.play, "I'm already playing!!", runIfPlaying=False)
+
+@bot.command(brief = 'ill change song if someone asked me to play trash')
+async def skip(ctx):
+    return await try_command(playlist.skip, "I can't skip if i am not playing TwT")
+
+@bot.command(brief = 'makes me stop my tunes')
+async def stop(ctx):
+    return await try_command(playlist.stop, "I'm not playing anything you dummy >\:(")
+
+@bot.command(aliases = ['playlist', 'current', 'playing', 'now'], brief = 'i can tell you what i\'m playing')
+async def queue(ctx):
+    return_message = ''
+    if playlist.current is None:
+        return_message = "I'm not playing anything. Start me up! UwU"
+    else:
+        return_message = "I'm playing " + str(playlist.current)
+        if len(playlist.queue) == 0:
+            return_message += ", but I've nothing requested queued up"
+        else:
+            return_message += ", and next I'll play:\n"
+            return_message += "\n".join([str(song) for song in playlist.queue])
+        return_message += "\n\n"  # Add a full newline between potential queue and the autoplay
+        return_message += "Coming up next from autoplay:\n"
+        return_message += playlist.get_unplayed(5)
+    return await ctx.message.channel.send(return_message)
+
+@bot.command(brief = 'i can mix up the playlist')
+async def shuffle(ctx):
+    playlist.shuffle()
+    return await ctx.message.channel.send("Queue shuffled!")
+
+@bot.command(brief = 'if you need me to mix up my LP collection')
+async def shuffleall(ctx):
+    playlist.shuffleall()
+    return await ctx.message.channel.send("Queue and backlog shuffled!")
 
 async def handle_music_message(message):
     global players, enumerators, playlist, library
     for player in players:
         if player.is_command(message.content):
             query = player.strip_command(message.content)
-            results = player.search(query)
 
-            if len(results) == 0:
-                return await message.channel.send(
-                    f'Couldn\'t find anything named »{query}« there :thinking:'
-                )
-
-            def callback(songchoice):
-                async def func(channel):
-                    songchoice.choose(playlist.enqueue_file)
-                    return f"I've queued {songchoice}"
-                return func
-
-            options = {
-                str(index + 1): callback(songchoice)
-                for index, songchoice in enumerate(results)
-            }
-
-            enumerators[message.channel.id] = EnumeratedOption(options)
-
-            text = "I found a bunch of songs:\n" + "\n".join([
-                f"{index + 1}: {songchoice}"
-                for index, songchoice in enumerate(results)
-            ])
-
-            return await message.channel.send(text)
-
-    async def try_command(func, else_message, runIfPlaying=True):
-        global playlist
-        if runIfPlaying == playlist.is_playing():
-            func()
-        else:
-            await message.channel.send(else_message)
-
-    if message.content == "skip":
-        return await try_command(playlist.skip, "I can't skip if i am not playing TwT")
-    if message.content == "stop":
-        return await try_command(playlist.stop, "I'm not playing anything you dummy >\:(")
-    if message.content == "play":
-        return await try_command(playlist.play, "I'm already playing!!", runIfPlaying=False)
-
-    if message.content in ["playlist", "queue", "current", "playing", "now"]:
-        return_message = ""
-        if playlist.current is None:
-            return_message = "I'm not playing anything. Start me up! UwU"
-        else:
-            return_message = "I'm playing " + str(playlist.current)
-            if len(playlist.queue) == 0:
-                return_message += ", but I've nothing requested queued up"
-            else:
-                return_message += ", and next I'll play:\n"
-                return_message += "\n".join([str(song) for song in playlist.queue])
-            return_message += "\n\n"  # Add a full newline between potential queue and the autoplay
-            return_message += "Coming up next from autoplay:\n"
-            return_message += playlist.get_unplayed(5)
-        return await message.channel.send(return_message)
-
-    if message.content == "shuffle":
-        playlist.shuffle()
-        return await message.channel.send("Queue shuffled!")
-
-    if message.content == "shuffleall":
-        playlist.shuffleall()
-        return await message.channel.send("Queue and backlog shuffled!")
-
-    channel_enum = enumerators[message.channel.id]
-    selection = message.content.split(" ")
-    if all(channel_enum.is_an_option(x) for x in selection):
-        async with message.channel.typing():
-            # Always at least 1 selection
-            complete_message = await channel_enum.options[selection[0]](message.channel)
-            # Then get the rest. If there are no more, nothing happens
-            for select in selection[1:]:
-                complete_message += "\n"
-                complete_message += await channel_enum.options[select](message.channel)
-            await message.channel.send(complete_message)
-        del enumerators[message.channel.id]
-        return
-
-
-@client.event
+@bot.event
 async def on_ready():
-    print(f"Logged in as {client.user}")
+    print(f"Logged in as {bot.user}")
 
-
-def help_message():
-    global players
-    return "\n".join([
-        "Okiii :3",
-        "**BASIC:**",
-        "  **help**      This command",
-        "  **play**      Start playing current song",
-        "  **stop**      Stop playing current song",
-        "  **skip**      Skip current song",
-        "  **queue**     Displays current queue of songs",
-        "  **playlist**  Ditto",
-        "  **shuffle**   Shuffles the current queue",
-        "  **shuffleall** Shuffles the current queue AND backlog",
-        "  **<option>**  Select one of the options",
-        "  **changelog** Show the changelog",
-        "**PLAYERS:**",
-    ] + [
-        f"  **{player.command}** <search query>\t{player.description}"
-        for player in players
-    ])
-
-
-def changelog_message():
-    return "\n".join([
+@bot.command(brief = 'shows my personal history')
+def changelog(ctx):
+    ctx.message.channel.send("\n".join([
         "Heres my personal history :D",
         "v0.1  *Basic deez downloading and playing",
     ])
 
+def player_command(player):
+    # Set up the command we'll call
+    async def result(ctx, *, query):
+        results = player.search(query)
 
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
+        if len(results) == 0:
+            return await ctx.message.channel.send(
+                f'Couldn\'t find anything named »{query}« there :thinking:'
+            )
 
-    #print(str(message) + ": '" + message.content + "'")
+        def callback(songchoice):
+            async def func(channel):
+                songchoice.choose(playlist.enqueue_file)
+                return f"I've queued {songchoice}"
+            return func
 
-    if message.content == "help":
-        return await message.channel.send(help_message())
-    if message.content == "changelog":
-        return await message.channel.send(changelog_message())
+        options = {
+            str(index + 1): callback(songchoice)
+            for index, songchoice in enumerate(results)
+        }
 
-    music_only_commands = ["play", "stop", "skip", "queue", "playlist", "shuffle", "shuffleall"]
-    player_commands = [player.command for player in players]
-    if any(music in message.channel.name for music in ["music", "musik"]):
-        try:
-            await handle_music_message(message)
-        except Exception as e:
-            await message.channel.send("I did an error :(\n```\n" + str(e) + "\n```")
-            raise e
+        enumerators[ctx.message.channel.id] = EnumeratedOption(options)
+
+        text = "I found a bunch of songs:\n" + "\n".join([
+            f"{index + 1}: {songchoice}"
+            for index, songchoice in enumerate(results)
+        ])
+
+        return await ctx.message.channel.send(text)
+
+    # Then return that command
+    return result
 
 
 def main(api: str, deez_arl: str = None, folder: str = "music"):
@@ -198,9 +171,14 @@ def main(api: str, deez_arl: str = None, folder: str = "music"):
     players = [
         LibraryPlayer(library),
         #YoutubePlayer(),
+    ] + ([ DeezPlayer(deez_arl) ] if deez_arl != None else [])
+    for p in players:
+        c = commands.Command(func = player_command(p), name = p.command, brief = p.description)
+        bot.add_command(c)
     ] + ([DeezPlayer(deez_arl)] if deez_arl != None else [])
     playlist.song_changed_subscribe(update_presence)
     client.run(api)
+    bot.run(api)
 
 
 typer.run(main)

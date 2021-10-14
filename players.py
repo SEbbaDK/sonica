@@ -32,15 +32,10 @@ class Player:
     def search(self, query: str):
         pass
 
-    def is_command(self, command: str):
-        return command.startswith(self.command + " ")
-    def strip_command(self, string: str):
-        return string[len(self.command) + 1:]
-
 class LibraryPlayer(Player):
     name = "Library Player"
     description = "Plays from the downloaded songs"
-    command = "library"
+    command = "lib"
 
     def __init__(self, library):
         self.library = library
