@@ -26,6 +26,7 @@ class EnumeratedOption:
         return string in self.options.keys()
 
 def update_presence(song: Song):
+    global bot
     # Set presence to "Playing [song] by [artist]"
     # We can't get asyncio to make a new event loop, since we already have one running the bot
     # So we just request the current one, and if there isn't one (which should be impossible?) we
@@ -42,7 +43,7 @@ def update_presence(song: Song):
     # act = discord.Activity(type=listening, name=f"{song.title} by {song.artist}")  # "Listening to ..."
     
     # Send the task to the event loop
-    loop.create_task(client.change_presence(activity=act))
+    loop.create_task(bot.change_presence(activity=act))
 
 # This acts as the catchall as well (the last command checked)
 enumerators = {}
