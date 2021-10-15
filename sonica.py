@@ -42,17 +42,18 @@ def update_presence(song: Song):
     # act = discord.Activity(type=listening, name=f"{song.title} by {song.artist}")  # "Listening to ..."
     
     # Send the task to the event loop
+    loop.create_task(client.change_presence(activity=act))
 
 # This acts as the catchall as well (the last command checked)
 enumerators = {}
 @bot.command(brief = 'if you enter something i have asked (like 1 or 2)')
-async def try_enumerators(ctx):
+async def gimme(ctx, *, query):
     global enumerators
     if not ctx.message.channel.id in enumerators:
         return
 
     channel_enum = enumerators[ctx.message.channel.id]
-    selection = ctx.message.content.split(" ")
+    selection = query.split(" ")
     if all(channel_enum.is_an_option(x) for x in selection):
         async with ctx.message.channel.typing():
             # Always at least 1 selection
@@ -62,26 +63,25 @@ async def try_enumerators(ctx):
                 complete_message += "\n"
                 complete_message += await channel_enum.options[select](ctx.message.channel)
             await ctx.message.channel.send(complete_message)
-        del enumerators[message.channel.id]
 
-async def try_command(func, else_message, runIfPlaying=True):
+async def try_command(func, send, else_message, runIfPlaying=True):
     global playlist
     if runIfPlaying == playlist.is_playing():
         func()
     else:
-        await message.channel.send(else_message)
+        await send(else_message)
 
 @bot.command(brief = 'makes me start playing music')
 async def play(ctx):
-    await try_command(playlist.play, "I'm already playing!!", runIfPlaying=False)
+    await try_command(playlist.play, ctx.message.channel.send, "I'm already playing!!", runIfPlaying=False)
 
 @bot.command(brief = 'ill change song if someone asked me to play trash')
 async def skip(ctx):
-    await try_command(playlist.skip, "I can't skip if i am not playing TwT")
+    await try_command(playlist.skip, ctx.message.channel.send, "I can't skip if i am not playing TwT")
 
 @bot.command(brief = 'makes me stop my tunes')
 async def stop(ctx):
-    await try_command(playlist.stop, "I'm not playing anything you dummy >\:(")
+    await try_command(playlist.stop, ctx.message.channel.send, "I'm not playing anything you dummy >\:(")
 
 @bot.command(aliases = ['playlist', 'current', 'playing', 'now'], brief = 'i can tell you what i\'m playing')
 async def queue(ctx):
