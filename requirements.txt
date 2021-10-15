@@ -12,7 +12,7 @@ discord.py
 deemix
 
 # Reading and writing tags
-pytaglib
+# pytaglib
 
 # Playing audio
 pydub

@@ -53,10 +53,8 @@ async def handle_music_message(message):
             enumerators[message.channel.id] = EnumeratedOption(options)
 
             if len(options) == 1:
-                text = "Here you go b-baka!!"
-                await enumerators[message.channel.id].options["1"](message.channel)
+                await options["1"](message.channel)
                 del enumerators[message.channel.id]
-                await message.channel.send(text)
                 return
             else:
                 text = "I found a bunch of songs:\n" + "\n".join([
