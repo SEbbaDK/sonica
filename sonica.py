@@ -42,7 +42,6 @@ def update_presence(song: Song):
     # act = discord.Activity(type=listening, name=f"{song.title} by {song.artist}")  # "Listening to ..."
     
     # Send the task to the event loop
-    loop.create_task(client.change_presence(activity=act))
 
 # This acts as the catchall as well (the last command checked)
 enumerators = {}
@@ -74,15 +73,15 @@ async def try_command(func, else_message, runIfPlaying=True):
 
 @bot.command(brief = 'makes me start playing music')
 async def play(ctx):
-    return await try_command(playlist.play, "I'm already playing!!", runIfPlaying=False)
+    await try_command(playlist.play, "I'm already playing!!", runIfPlaying=False)
 
 @bot.command(brief = 'ill change song if someone asked me to play trash')
 async def skip(ctx):
-    return await try_command(playlist.skip, "I can't skip if i am not playing TwT")
+    await try_command(playlist.skip, "I can't skip if i am not playing TwT")
 
 @bot.command(brief = 'makes me stop my tunes')
 async def stop(ctx):
-    return await try_command(playlist.stop, "I'm not playing anything you dummy >\:(")
+    await try_command(playlist.stop, "I'm not playing anything you dummy >\:(")
 
 @bot.command(aliases = ['playlist', 'current', 'playing', 'now'], brief = 'i can tell you what i\'m playing')
 async def queue(ctx):
@@ -109,7 +108,7 @@ async def shuffle(ctx):
 @bot.command(brief = 'if you need me to mix up my LP collection')
 async def shuffleall(ctx):
     playlist.shuffleall()
-    return await ctx.message.channel.send("Queue and backlog shuffled!")
+    await ctx.message.channel.send("Queue and backlog shuffled!")
 
 async def handle_music_message(message):
     global players, enumerators, playlist, library
@@ -122,11 +121,11 @@ async def on_ready():
     print(f"Logged in as {bot.user}")
 
 @bot.command(brief = 'shows my personal history')
-def changelog(ctx):
-    ctx.message.channel.send("\n".join([
+async def changelog(ctx):
+    await ctx.message.channel.send("\n".join([
         "Heres my personal history :D",
         "v0.1  *Basic deez downloading and playing",
-    ])
+    ]))
 
 def player_command(player):
     # Set up the command we'll call
@@ -175,9 +174,7 @@ def main(api: str, deez_arl: str = None, folder: str = "music"):
     for p in players:
         c = commands.Command(func = player_command(p), name = p.command, brief = p.description)
         bot.add_command(c)
-    ] + ([DeezPlayer(deez_arl)] if deez_arl != None else [])
     playlist.song_changed_subscribe(update_presence)
-    client.run(api)
     bot.run(api)
 
 
