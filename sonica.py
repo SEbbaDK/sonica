@@ -41,7 +41,7 @@ def update_presence(song: Song):
     # As an alternative, there is also the activity below.
     # listening = discord.ActivityType.listening
     # act = discord.Activity(type=listening, name=f"{song.title} by {song.artist}")  # "Listening to ..."
-    
+
     # Send the task to the event loop
     loop.create_task(bot.change_presence(activity=act))
 
@@ -110,12 +110,6 @@ async def shuffle(ctx):
 async def shuffleall(ctx):
     playlist.shuffleall()
     await ctx.message.channel.send("Queue and backlog shuffled!")
-
-async def handle_music_message(message):
-    global players, enumerators, playlist, library
-    for player in players:
-        if player.is_command(message.content):
-            query = player.strip_command(message.content)
 
 @bot.event
 async def on_ready():
