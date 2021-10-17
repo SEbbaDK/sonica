@@ -5,6 +5,7 @@ import deemix
 import deemix.settings
 from deemix.downloader import Downloader
 from deezer import Deezer, TrackFormats
+from deezer.errors import DataException
 #from youtube_dl import YoutubeDL
 #from youtube_search import YoutubeSearch
 
@@ -89,11 +90,10 @@ class DeezPlayer(Player):
             if 'downloaded' in message and message['downloaded']:
                 self.callback(message['downloadPath'])
 
-
     def search(self, query: str):
         results = self.dz.api.search(query)['data']
         #print(results[0:9])
-        return [
+        res_list = [
             self.DeezSongChoice(
                 title = x['title'],
                 artist = x['artist']['name'],
@@ -102,7 +102,27 @@ class DeezPlayer(Player):
             )
             for x in results[0:9]
         ]
+        # If there are no search results, try an id-search if the query can
+        # be an int.
+        if not res_list and int(query):
+            res_list = self.search_id(int(query))
 
+        return res_list
+
+    def search_id(self, id_query: int):
+        # Just because the query is int()-able, doesn't mean it's actually
+        # a deezer track id. In case it's not, we don't return any results.
+        try:
+            result = self.dz.api.get_track(id_query)
+        except DataException:
+            return []
+
+        return [self.DeezSongChoice(
+            title = result['title'],
+            artist = result['artist']['name'],
+            dz = self.dz,
+            link = result['link']
+        )]
 
 #class YoutubePlayer(Player):
 #    name = "Youtube Player"
@@ -122,4 +142,3 @@ class DeezPlayer(Player):
 #            SongChoice(x['title'], x['channel'], lambda: download(x['id']))
 #            for x in results[0:9]
 #        ]
-
