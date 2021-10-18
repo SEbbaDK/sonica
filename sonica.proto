@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+service Sonica {
+	rpc Play (None) returns (Status);
+}
+
+message None {
+}
+
+message Status {
+    bool success = 1;
+}
