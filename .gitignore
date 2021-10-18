@@ -4,5 +4,3 @@ music/
 *.secret
 venv/
 
-.deezerARL
-.botToken
