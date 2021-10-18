@@ -157,7 +157,7 @@ def player_command(player):
 
 def deez_arl_auto():
     try:
-        with open(".deezerARL", "r") as f:
+        with open("deezer.secret", "r") as f:
             temp = f.read()
             if temp == "":
                 return None
@@ -167,13 +167,11 @@ def deez_arl_auto():
 
 def bot_token_auto():
     try:
-        with open(".botToken", "r") as f:
+        with open("token.secret", "r") as f:
             temp = f.read()
-            if temp == "":
-                return None
+            if temp == ""
+                raise Exception("Sorry, you provided no token for Sonica, baka!")
             return temp
-    except Exception:
-        return None
 
 def main(api: str = None, deez_arl: str = None, folder: str = "music"):
     if deez_arl == None:
