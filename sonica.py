@@ -170,7 +170,7 @@ def bot_token_auto():
         with open("token.secret", "r") as f:
             temp = f.read()
             if temp == ""
-                raise Exception("Sorry, you provided no token for Sonica, baka!")
+                raise RuntimeError("Sorry, you provided no token for Sonica, baka!")
             return temp
 
 def main(api: str = None, deez_arl: str = None, folder: str = "music"):
