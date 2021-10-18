@@ -7,11 +7,13 @@ from simpleaudio import play_buffer
 
 from song import Song
 
+
 class Playlist:
     current: Song = None
     queue: list[Song] = []
     unplayed: list[Song] = []
     paused = False
+    song_change_subs = []
 
     def __reset_player(self):
         self.play_start = None
@@ -27,18 +29,25 @@ class Playlist:
         self.unplayed += next_library
 
     def __autonext(self):
-        while self.playback != None and self.playback.is_playing():
+        while self.playback is not None and self.playback.is_playing():
             sleep(0.25)
-        if self.playback != None and not self.paused:
+        if self.playback is not None and not self.paused:
             self.current = None
             self.__reset_player()
             self.play()
 
+    def song_changed_dispatch(self):
+        for sub in self.song_change_subs:
+            sub(self.current)
+
+    def song_changed_subscribe(self, subscriber):
+        self.song_change_subs.append(subscriber)
+
     def play(self):
-        if self.playback != None:
+        if self.playback is not None:
             raise Exception("Can't play while playing")
 
-        if self.current == None:
+        if self.current is None:
             if len(self.queue) != 0:
                 self.current = self.queue.pop(0)
             else:
@@ -56,9 +65,9 @@ class Playlist:
         # https://github.com/jiaaro/pydub/blob/master/pydub/playback.py#L41
         self.playback = play_buffer(
             s.raw_data,
-            num_channels = s.channels,
-            bytes_per_sample = s.sample_width,
-            sample_rate = s.frame_rate
+            num_channels=s.channels,
+            bytes_per_sample=s.sample_width,
+            sample_rate=s.frame_rate
         )
 
         # Note the current time so we can check progression (and pause)
@@ -67,12 +76,13 @@ class Playlist:
         # Start a thread to keep an eye on the playing song
         # and play a new one when done
         start_new_thread(self.__autonext, ())
+        self.song_changed_dispatch()
 
     def is_playing(self):
-        return self.playback != None
+        return self.playback is not None
 
     def stop(self):
-        if self.playback == None:
+        if self.playback is None:
             raise Exception("Cannot stop playing when already stopped")
         self.playback.stop()
         self.paused = True
@@ -93,7 +103,7 @@ class Playlist:
             self.play()
 
     def enqueue(self, song: Song):
-        if len(self.queue) == 0 and self.current == None:
+        if len(self.queue) == 0 and self.current is None:
             self.current = song
         else:
             self.queue.append(song)

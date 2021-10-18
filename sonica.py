@@ -3,10 +3,12 @@
 import typer
 import discord
 from discord.ext import commands
+import asyncio
 
 from library import Library
 from playlist import Playlist
-from players import LibraryPlayer, DeezPlayer  # , YoutubePlayer
+from players import LibraryPlayer, DeezPlayer#, YoutubePlayer
+from song import Song
 
 bot = commands.Bot(command_prefix = '')
 
@@ -23,17 +25,36 @@ class EnumeratedOption:
     def is_an_option(self, string: str):
         return string in self.options.keys()
 
+def update_presence(song: Song):
+    global bot
+    # Set presence to "Playing [song] by [artist]"
+    # We can't get asyncio to make a new event loop, since we already have one running the bot
+    # So we just request the current one, and if there isn't one (which should be impossible?) we
+    # just quit
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        return
+
+    # Set up the status message. "Playing " will be prepended to the string
+    act = discord.Game(f"{song.title} by {song.artist}")  # "Playing ..."
+    # As an alternative, there is also the activity below.
+    # listening = discord.ActivityType.listening
+    # act = discord.Activity(type=listening, name=f"{song.title} by {song.artist}")  # "Listening to ..."
+
+    # Send the task to the event loop
+    loop.create_task(bot.change_presence(activity=act))
 
 # This acts as the catchall as well (the last command checked)
 enumerators = {}
 @bot.command(brief = 'if you enter something i have asked (like 1 or 2)')
-async def try_enumerators(ctx):
+async def gimme(ctx, *, query):
     global enumerators
     if not ctx.message.channel.id in enumerators:
         return
 
     channel_enum = enumerators[ctx.message.channel.id]
-    selection = ctx.message.content.split(" ")
+    selection = query.split(" ")
     if all(channel_enum.is_an_option(x) for x in selection):
         async with ctx.message.channel.typing():
             # Always at least 1 selection
@@ -43,26 +64,25 @@ async def try_enumerators(ctx):
                 complete_message += "\n"
                 complete_message += await channel_enum.options[select](ctx.message.channel)
             await ctx.message.channel.send(complete_message)
-        del enumerators[message.channel.id]
 
-async def try_command(func, else_message, runIfPlaying=True):
+async def try_command(func, send, else_message, runIfPlaying=True):
     global playlist
     if runIfPlaying == playlist.is_playing():
         func()
     else:
-        await message.channel.send(else_message)
+        await send(else_message)
 
 @bot.command(brief = 'makes me start playing music')
 async def play(ctx):
-    return await try_command(playlist.play, "I'm already playing!!", runIfPlaying=False)
+    await try_command(playlist.play, ctx.message.channel.send, "I'm already playing!!", runIfPlaying=False)
 
 @bot.command(brief = 'ill change song if someone asked me to play trash')
 async def skip(ctx):
-    return await try_command(playlist.skip, "I can't skip if i am not playing TwT")
+    await try_command(playlist.skip, ctx.message.channel.send, "I can't skip if i am not playing TwT")
 
 @bot.command(brief = 'makes me stop my tunes')
 async def stop(ctx):
-    return await try_command(playlist.stop, "I'm not playing anything you dummy >\:(")
+    await try_command(playlist.stop, ctx.message.channel.send, "I'm not playing anything you dummy >\:(")
 
 @bot.command(aliases = ['playlist', 'current', 'playing', 'now'], brief = 'i can tell you what i\'m playing')
 async def queue(ctx):
@@ -89,24 +109,18 @@ async def shuffle(ctx):
 @bot.command(brief = 'if you need me to mix up my LP collection')
 async def shuffleall(ctx):
     playlist.shuffleall()
-    return await ctx.message.channel.send("Queue and backlog shuffled!")
-
-async def handle_music_message(message):
-    global players, enumerators, playlist, library
-    for player in players:
-        if player.is_command(message.content):
-            query = player.strip_command(message.content)
+    await ctx.message.channel.send("Queue and backlog shuffled!")
 
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user}")
 
 @bot.command(brief = 'shows my personal history')
-def changelog(ctx):
-    ctx.message.channel.send("\n".join([
+async def changelog(ctx):
+    await ctx.message.channel.send("\n".join([
         "Heres my personal history :D",
         "v0.1  *Basic deez downloading and playing",
-    ])
+    ]))
 
 def player_command(player):
     # Set up the command we'll call
@@ -155,6 +169,7 @@ def main(api: str, deez_arl: str = None, folder: str = "music"):
     for p in players:
         c = commands.Command(func = player_command(p), name = p.command, brief = p.description)
         bot.add_command(c)
+    playlist.song_changed_subscribe(update_presence)
     bot.run(api)
 
 
