@@ -1,10 +1,10 @@
 syntax = "proto3";
 
 service Sonica {
-	rpc Play (None) returns (Status);
+	rpc Play (Empty) returns (Status);
 }
 
-message None {
+message Empty {
 }
 
 message Status {
