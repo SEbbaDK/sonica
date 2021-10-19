@@ -148,7 +148,7 @@ def player_command(player):
         if len(enumerators) == 1:
             text = "I found a single song"
             await ctx.message.channel.send(text)
-            return await ctx.message.channel.send(options["1"](ctx.message.channel))
+            return await ctx.message.channel.send(await options["1"](ctx.message.channel))
         else:
             text = "I found a bunch of songs:\n" + "\n".join([
                 f"{index + 1}: {songchoice}"
