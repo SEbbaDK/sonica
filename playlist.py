@@ -102,6 +102,9 @@ class Playlist:
         if was_playing:
             self.play()
 
+    def cleanse(self):
+        self.queue.clear()
+
     def enqueue(self, song: Song):
         if len(self.queue) == 0 and self.current is None:
             self.current = song

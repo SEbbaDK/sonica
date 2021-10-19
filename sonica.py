@@ -84,6 +84,11 @@ async def skip(ctx):
 async def stop(ctx):
     await try_command(playlist.stop, ctx.message.channel.send, "I'm not playing anything you dummy >\:(")
 
+@bot.command(brief = 'makes me clear the current queue')
+async def clear(ctx):
+    playlist.cleanse()
+    return await ctx.message.channel.send("The list have now been cleared... You know because i wanted to do it, not because you asked me!")
+
 @bot.command(aliases = ['playlist', 'current', 'playing', 'now'], brief = 'i can tell you what i\'m playing')
 async def queue(ctx):
     return_message = ''
