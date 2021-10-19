@@ -3,3 +3,8 @@ music/
 
 *.secret
 venv/
+
+sonica_pb2_grpc.py
+sonica_pb2.py
+sonica.pb.cr
+sonica_services.pb.cr
