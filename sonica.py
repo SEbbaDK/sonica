@@ -162,7 +162,7 @@ def deez_arl_auto():
             if temp == "":
                 return None
             return temp
-    except RuntimeError:
+    except FileNotFoundError:
         return None
 
 def bot_token_auto():
@@ -170,10 +170,10 @@ def bot_token_auto():
         with open("token.secret", "r") as f:
             temp = f.read()
             if temp == "":
-                raise RuntimeError("Sorry, you provided no token for Sonica, baka!")
+                exit("Sorry, you provided no token for Sonica, baka!")
             return temp
-    except RuntimeError:
-        return None
+    except FileNotFoundError:
+        pass
 
 def main(api: str = None, deez_arl: str = None, folder: str = "music"):
     if deez_arl == None:
