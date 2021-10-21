@@ -160,8 +160,32 @@ def player_command(player):
     # Then return that command
     return result
 
+def deez_arl_auto():
+    try:
+        with open("deezer.secret", "r") as f:
+            temp = f.read()
+            if temp == "":
+                return None
+            return temp
+    except FileNotFoundError:
+        return None
 
-def main(api: str, deez_arl: str = None, folder: str = "music"):
+def bot_token_auto():
+    try:
+        with open("token.secret", "r") as f:
+            temp = f.read()
+            if temp == "":
+                exit("Sorry, you provided no token for Sonica, baka!")
+            return temp
+    except FileNotFoundError:
+        pass
+
+def main(api: str = None, deez_arl: str = None, folder: str = "music"):
+    if deez_arl == None:
+        deez_arl = deez_arl_auto()
+    if api == None:
+        api = bot_token_auto()
+
     global library, playlist, players
     library = Library(folder)
     print(f"Library contains {library.size()} songs")
@@ -174,6 +198,8 @@ def main(api: str, deez_arl: str = None, folder: str = "music"):
     for p in players:
         c = commands.Command(func = player_command(p), name = p.command, brief = p.description)
         bot.add_command(c)
+
+
     playlist.song_changed_subscribe(update_presence)
     bot.run(api)
 
