@@ -150,10 +150,15 @@ def player_command(player):
 
         enumerators[ctx.message.channel.id] = EnumeratedOption(options)
 
-        text = "I found a bunch of songs:\n" + "\n".join([
-            f"{index + 1}: {songchoice}"
-            for index, songchoice in enumerate(results)
-        ])
+        if len(enumerators) == 1:
+            text = "I found a single song"
+            await ctx.message.channel.send(text)
+            return await ctx.message.channel.send(await options["1"](ctx.message.channel))
+        else:
+            text = "I found a bunch of songs:\n" + "\n".join([
+                f"{index + 1}: {songchoice}"
+                for index, songchoice in enumerate(results)
+            ])
 
         return await ctx.message.channel.send(text)
 
