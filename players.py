@@ -93,7 +93,7 @@ class DeezPlayer(Player):
 
     def search(self, query: str):
         url_check = query
-        if re.search("/([a-z]*[.])\w+/", url_check) == True:
+        if re.search("([a-z]*[.])\w+", url_check) == True:
             return "You cant use links"
         results = self.dz.api.search(query)['data']
         #print(results[0:9])
