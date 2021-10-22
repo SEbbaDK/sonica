@@ -150,7 +150,7 @@ def player_command(player):
 
         enumerators[ctx.message.channel.id] = EnumeratedOption(options)
 
-        if len(enumerators) == 1:
+        if len(options) == 1:
             text = "I found a single song"
             await ctx.message.channel.send(text)
             return await ctx.message.channel.send(await options["1"](ctx.message.channel))
