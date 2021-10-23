@@ -34,7 +34,7 @@ class Player:
         pass
 
 class LibraryPlayer(Player):
-    name = "Library Player"
+    name = "Library"
     description = "Plays from the downloaded songs"
     command = "lib"
 
@@ -59,7 +59,7 @@ class LibraryPlayer(Player):
         ]
 
 class DeezPlayer(Player):
-    name = "Deezer Player"
+    name = "Deezer"
     description = "Plays from deezer"
     command = "deez"
 
@@ -125,7 +125,7 @@ class DeezPlayer(Player):
         )]
 
 #class YoutubePlayer(Player):
-#    name = "Youtube Player"
+#    name = "Youtube"
 #    description = "Plays from youtube"
 #    command = "yt"
 #

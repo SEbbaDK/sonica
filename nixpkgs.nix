@@ -1,5 +1,5 @@
 let
-    rev = "f05192f5d7b77d70f3b4b979b9466a9e7b0d445a";
+    rev = "930da485d9af8100f8858bd6fe8f28e3eca26933";
     hash = "1a5kazsi00bwmsrj75paif9hyrkdnm61gll1qqs2mwyfmhhcllj6";
 in
 import (fetchTarball {

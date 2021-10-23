@@ -2,11 +2,44 @@ syntax = "proto3";
 
 service Sonica {
 	rpc Play (Empty) returns (Status);
+	rpc Pause (Empty) returns (Status);
+	rpc Skip (Empty) returns (Status);
+	rpc Shuffle (Empty) returns (Status);
+	
+	rpc Search (SearchQuery) returns (QueryResult);
+	rpc Add (Choice) returns (Status);
 }
 
-message Empty {
-}
+message Empty {}
 
 message Status {
     bool success = 1;
+    string reason = 2;
+}
+
+message SearchQuery {
+    repeated string query = 1;
+    bool all_engines = 2;
+    repeated string engine = 3;
+}
+
+message Possibility {
+	int64 id = 1;
+	string title = 2;
+	string artist = 3;
+}
+
+message QueryResult {
+    message EngineResult {
+        string name = 1;
+        repeated Possibility possibilities = 2;
+    }
+    int64 query_id = 1;
+    repeated EngineResult results = 2;
+}
+
+message Choice {
+    int64 query_id = 1;
+    string engine_name = 2;
+    Possibility possibility = 3;
 }
