@@ -41,8 +41,8 @@ message Queue {
 
     message Pair {
         Hash hash = 1;
-        Target from = 2;
-        Target to = 3;
+        Target from_index = 2;
+        Target to_index = 3;
     }
 
     message ShuffleTargets {
