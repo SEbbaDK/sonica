@@ -102,6 +102,16 @@ class Playlist:
         if was_playing:
             self.play()
 
+    def clear(self):
+        self.queue = []
+
+    def move(self, from_index, to_index):
+        s = self.queue.pop(from_index)
+        self.queue.insert(to_index, s)
+
+    def remove(self, target):
+        self.queue.pop(target)
+
     def enqueue(self, song: Song):
         if len(self.queue) == 0 and self.current is None:
             self.current = song
@@ -115,3 +125,6 @@ class Playlist:
         if len(self.unplayed) < amount:
             self.__refill()
         return "\n".join([str(song) for song in self.unplayed[:amount]])
+
+    def queue_hash(self):
+        return hash(tuple(self.queue))

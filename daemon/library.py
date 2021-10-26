@@ -38,6 +38,7 @@ class Library:
             path,
             f.tags['TITLE'][0],
             f.tags['ARTIST'][0],
+            f.tags['ALBUM'][0],
             f.tags['TAGS'] if 'TAGS' in f.tags else []
         )
         self.index.append(song)
