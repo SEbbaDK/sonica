@@ -1,13 +1,14 @@
 from dataclasses import dataclass
 from collections.abc import Callable
 
+import re
 import deemix
 import deemix.settings
 from deemix.downloader import Downloader
 from deezer import Deezer, TrackFormats
 from deezer.errors import DataException
-#from youtube_dl import YoutubeDL
-#from youtube_search import YoutubeSearch
+from youtube_dl import YoutubeDL
+from youtube_search import YoutubeSearch
 
 from song import Song
 from library import Library
@@ -91,6 +92,9 @@ class DeezPlayer(Player):
                 self.callback(message['downloadPath'])
 
     def search(self, query: str):
+        url_check = query
+        if re.search("([a-z]*[.])\w+", url_check):
+            return []
         results = self.dz.api.search(query)['data']
         #print(results[0:9])
         res_list = [
@@ -124,21 +128,29 @@ class DeezPlayer(Player):
             link = result['link']
         )]
 
-#class YoutubePlayer(Player):
-#    name = "Youtube Player"
-#    description = "Plays from youtube"
-#    command = "yt"
-#
-#    def __init__(self):
-#        self.ytdl = YoutubeDL()
-#
-#    def search(self, query: str):
-#        results = YoutubeSearch(query).videos
-#
-#        def download(link: str):
-#            pass
-#
-#        return [
-#            SongChoice(x['title'], x['channel'], lambda: download(x['id']))
-#            for x in results[0:9]
-#        ]
+class YoutubePlayer(Player):
+    name = "Youtube Player"
+    description = "Plays from youtube"
+    command = "yt"
+
+    def __init__(self):
+        self.ytdl = YoutubeDL()
+
+    @dataclass
+    class YTSongChoice(SongChoice):
+        ytdl: YoutubeDL()
+        link: str
+
+        def choose(self, callback):
+            self.callback = callback
+
+    def search(self, query: str):
+        results = YoutubeSearch(query).videos
+
+        def download(link: str):
+            pass
+
+        return [
+            SongChoice(x['title'], x['channel'], lambda: download(x['id']))
+            for x in results[0:9]
+        ]
