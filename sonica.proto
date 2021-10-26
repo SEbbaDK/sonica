@@ -1,45 +1,115 @@
 syntax = "proto3";
 
 service Sonica {
-	rpc Play (Empty) returns (Status);
-	rpc Pause (Empty) returns (Status);
-	rpc Skip (Empty) returns (Status);
-	rpc Shuffle (Empty) returns (Status);
-	
-	rpc Search (SearchQuery) returns (QueryResult);
-	rpc Add (Choice) returns (Status);
+    // Playback commands
+	rpc Play (Empty) returns (Result);
+	rpc Stop (Empty) returns (Result);
+	rpc Skip (Empty) returns (Result);
+
+	// Queue commands
+	rpc Clear (Queue.Hash) returns (Result);
+	rpc Shuffle (Queue.ShuffleTargets) returns (Result);
+	rpc Move(Queue.Pair) returns (Result);
+	rpc Remove(Queue.Target) returns (Result);
+
+	// Adding commands
+	rpc Search (Search.Query) returns (Search.Result);
+	rpc Choose (Search.Choice) returns (Result);
+
+	// Info Commands
+	rpc Engines (Empty) returns (EngineList);
+	rpc Status (Status.Query) returns (Status.Info);
+	rpc Library (Empty) returns (LibraryInfo);
 }
 
 message Empty {}
 
-message Status {
+message Result {
     bool success = 1;
     string reason = 2;
 }
 
-message SearchQuery {
-    repeated string query = 1;
-    bool all_engines = 2;
-    repeated string engine = 3;
-}
+message Queue {
 
-message Possibility {
-	int64 id = 1;
-	string title = 2;
-	string artist = 3;
-}
-
-message QueryResult {
-    message EngineResult {
-        string name = 1;
-        repeated Possibility possibilities = 2;
+    message Hash {
+        int64 value = 1;
     }
-    int64 query_id = 1;
-    repeated EngineResult results = 2;
+
+    message Target {
+        int32 index = 1;
+    }
+
+    message Pair {
+        Hash hash = 1;
+        Target from = 2;
+        Target to = 3;
+    }
+
+    message ShuffleTargets {
+        Hash hash = 1;
+        bool queue = 2;
+        bool autoplay = 3;
+    }
+
 }
 
-message Choice {
-    int64 query_id = 1;
-    string engine_name = 2;
-    Possibility possibility = 3;
+message Search {
+    
+    message Query {
+        repeated string query = 1;
+        repeated string engines = 2;
+    }
+
+    message Result {
+        message EngineResult {
+            string name = 1;
+            map<int64, Song> possibilities = 2;
+        }
+        int64 query_id = 1;
+        repeated EngineResult results = 2;
+    }
+
+    message Choice {
+        int64 query_id = 1;
+        string engine_name = 2;
+        int64 possibility_id  = 3;
+        
+        bool add_to_top = 4;
+    }
+    
+}
+
+message Song {
+	string title = 1;
+	string artist = 2;
+	string album = 3;
+}
+
+message EngineList {
+    repeated string engines = 1;
+}
+
+message Status {
+    
+    message Query {
+    	int32 queue_max = 1;
+    	int32 autoplay_max = 2;
+    }
+
+    message Info {
+    	Song current = 1;
+    	int32 length = 2;
+    	int32 progress = 3;
+
+    	int32 queue_length = 4;
+    	int64 queue_hash = 5;
+    	repeated Song queue = 6;
+    	repeated Song autoplay = 7;
+    }
+    
+}
+
+message LibraryInfo {
+    int64 size = 1;
+    repeated Song songs = 2;
 }
