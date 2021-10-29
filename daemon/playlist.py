@@ -88,11 +88,10 @@ class Playlist:
         self.paused = True
         self.__reset_player()
 
-    def shuffle(self):
+    def shuffle_queue(self):
         random.shuffle(self.queue)
 
-    def shuffleall(self):
-        random.shuffle(self.queue)
+    def shuffle_autoplay(self):
         random.shuffle(self.unplayed)
 
     def skip(self):
