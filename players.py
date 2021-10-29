@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from collections.abc import Callable
 
+import re
 import deemix
 import deemix.settings
 from deemix.downloader import Downloader
@@ -91,6 +92,9 @@ class DeezPlayer(Player):
                 self.callback(message['downloadPath'])
 
     def search(self, query: str):
+        url_check = query
+        if re.search("([a-z]*[.])\w+", url_check):
+            return []
         results = self.dz.api.search(query)['data']
         #print(results[0:9])
         res_list = [
