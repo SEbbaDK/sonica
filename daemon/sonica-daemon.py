@@ -68,7 +68,7 @@ class Sonica(SonicaServicer):
             return Result(success = False, reason = 'From-value is not a valid index')
 
         if request.to_index >= len(self.playlist.queue):
-            return Result(success = False, reason = 'From-value is not a valid index')
+            return Result(success = False, reason = 'To-value is not a valid index')
 
         self.playlist.move(request.from_index, request.to_index)
         return Result(success = True)
