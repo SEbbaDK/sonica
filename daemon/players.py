@@ -45,8 +45,8 @@ class LibraryPlayer(Player):
     class LibrarySongChoice(SongChoice):
         song: Song
 
-        def choose(self, callback):
-            callback(self.song.path)
+        def choose(self):
+            return self.song.path
 
     def search(self, query: str):
         return [
@@ -72,8 +72,7 @@ class DeezPlayer(Player):
         dz: Deezer
         link: str
 
-        def choose(self, callback):
-            self.callback = callback
+        def choose(self):
             downloader = deemix.generateDownloadObject(
                 self.dz,
                 self.link,
@@ -83,12 +82,13 @@ class DeezPlayer(Player):
                 **deemix.settings.DEFAULTS,
                 'downloadLocation': './music',
             }, listener = self).start()
+            return self.path
 
         def send(self, kind, message):
             if kind != 'updateQueue':
                 return
             if 'downloaded' in message and message['downloaded']:
-                self.callback(message['downloadPath'])
+                self.path = message['downloadPath']
 
     def search(self, query: str):
         results = self.dz.api.search(query)['data']

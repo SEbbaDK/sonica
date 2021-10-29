@@ -65,16 +65,12 @@ message Search {
             string name = 1;
             map<int64, Song> possibilities = 2;
         }
-        int64 query_id = 1;
-        repeated EngineResult results = 2;
+        repeated EngineResult results = 1;
     }
 
     message Choice {
-        int64 query_id = 1;
-        string engine_name = 2;
-        int64 possibility_id  = 3;
-        
-        bool add_to_top = 4;
+        int64 possibility_id = 1;
+        bool add_to_top = 2;
     }
     
 }

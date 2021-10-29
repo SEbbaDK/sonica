@@ -28,66 +28,87 @@ class Sonica(SonicaServicer):
         self.library = library
         self.playlist = Playlist(library)
         self.players = players
+        self.choices = {}
 
     # Playback commands
     
     def Play(self, request, context):
-        playlist.play()
-        return Status(success = True)
+        self.playlist.play()
+        return Result(success = True)
 
     def Stop(self, request, context):
-        playlist.stop()
-        return Status(success = True)
+        self.playlist.stop()
+        return Result(success = True)
 
     def Skip(self, request, context):
-        playlist.skip()
-        return Status(success = True)
+        self.playlist.skip()
+        return Result(success = True)
 
     # Queue commands
 
     def Clear(self, request, context):
-        if request.value != playlist.queue_hash():
-            return Status(success = False, reason = 'Hash mismatch')
+        if request.value != self.playlist.queue_hash():
+            return Result(success = False, reason = 'Hash mismatch')
 
-        playlist.clear()
-        return Status(success = True)
+        self.playlist.clear()
+        return Result(success = True)
 
     def Shuffle(self, request, context):
-        if request.hash.value != playlist.queue_hash():
-            return Status(success = False, reason = 'Hash mismatch')
+        if request.hash.value != self.playlist.queue_hash():
+            return Result(success = False, reason = 'Hash mismatch')
 
-        playlist.shuffle()
-        return Status(success = True)
+        self.playlist.shuffle()
+        return Result(success = True)
 
     def Move(self, request, context):
-        if request.hash.value != playlist.queue_hash():
-            return Status(success = False, reason = 'Hash mismatch')
+        if request.hash.value != self.playlist.queue_hash():
+            return Result(success = False, reason = 'Hash mismatch')
 
-        if request.from_index >= len(playlist.queue):
-            return Status(success = False, reason = 'From-value is not a valid index')
+        if request.from_index >= len(self.playlist.queue):
+            return Result(success = False, reason = 'From-value is not a valid index')
 
-        if request.to_index >= len(playlist.queue):
-            return Status(success = False, reason = 'From-value is not a valid index')
+        if request.to_index >= len(self.playlist.queue):
+            return Result(success = False, reason = 'From-value is not a valid index')
 
-        playlist.move(request.from_index, request.to_index)
-        return Status(success = True)
+        self.playlist.move(request.from_index, request.to_index)
+        return Result(success = True)
 
     def Remove(self, request, context):
-        if request.hash.value != playlist.queue_hash():
-            return Status(success = False, reason = 'Hash mismatch')
+        if request.hash.value != self.playlist.queue_hash():
+            return Result(success = False, reason = 'Hash mismatch')
 
-        if request.target >= len(playlist.queue):
-            return Status(success = False, reason = 'No song with that id')
+        if request.target >= len(self.playlist.queue):
+            return Result(success = False, reason = 'No song with that id')
 
-        playlist.remove(request.target)
-        return Status(success = True)
+        self.playlist.remove(request.target)
+        return Result(success = True)
 
     # Adding commands
 
-    #def Search(self, request, context):
-    #    results = []
-    #    for p in self.players:
-    #        results.append(EngineResult(p.name, p.search(request.query)
+    def Search(self, request, context):
+        results = []
+        for p in self.players:
+            search = p.search(request.query)
+            map = {}
+
+            for r in search:
+                id = randint64()
+                self.choices[id] = r
+                map[id] = Song(r.title, r.artist, '')
+
+            engine_result = EngineResult(p.name, map)
+            results.append(engine_result)
+
+        return Search.Result(results = results)
+
+    def Choose(self, request, context):
+        id = request.possibility_id
+        if not id in self.choices:
+            return Result(False, 'Not a valid possibilityid')
+
+        filename = self.choices[id].choose()
+        self.playlist.enqueue_file(filename)
+        return Result(True)
 
 
     # Info commands
@@ -97,20 +118,20 @@ class Sonica(SonicaServicer):
 
     def Status(self, request, context):
         return Status.Info(
-            current = songify(playlist.current),
+            current = songify(self.playlist.current),
             length = 1, # TODO: This should actually do something
             progress = 0,
 
-            queue_length = len(playlist.queue),
-            queue_hash = playlist.queue_hash(),
-            queue = playlist.queue[0:request.queue_max],
-            autoplay = playlist.autoplay[0:request.autoplay_max],
+            queue_length = len(self.playlist.queue),
+            queue_hash = self.playlist.queue_hash(),
+            queue = self.playlist.queue[0:request.queue_max],
+            autoplay = self.playlist.autoplay[0:request.autoplay_max],
         )
 
     def Library(self, request, context):
         return LibraryInfo(
-            size = library.size(),
-            songs = [ songify(s) for s in library.index ],
+            size = self.library.size(),
+            songs = [ songify(s) for s in self.library.index ],
         )
 
 

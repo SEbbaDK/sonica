@@ -4,7 +4,7 @@ import os
 
 import typer
 
-cli = typer.Typer()
+program = typer.Typer()
 
 options = {}
 
@@ -24,7 +24,7 @@ def create_generator(language: str):
         ]))
     return generator
 
-@cli.command()
+@program.command()
 def generate_grpc_python(dir: str):
     """
     Generates the python protobuf spec and grpc clients/server from the sonica service spec.
@@ -37,7 +37,7 @@ def generate_grpc_python(dir: str):
         f'sonica.proto',
     ]))
 
-@cli.command()
+@program.command()
 def generate_grpc_crystal(dir: str):
     """
     Generates the crystal protobuf spec and grpc clients/server from the sonica service spec.
@@ -52,23 +52,27 @@ def generate_grpc_crystal(dir: str):
         f'sonica.proto',
     ]))
 
-@cli.command()
+@program.command()
 def discord():
     generate_grpc_python('discord')
 
-@cli.command()
+@program.command()
 def daemon():
     generate_grpc_python('daemon')
 
-@cli.command()
+@program.command()
 def http():
     generate_grpc_crystal('http')
+
+@program.command()
+def cli():
+    generate_grpc_crystal('cli')
 
 def error(text: str):
     typer.secho(text, fg = typer.colors.RED, err = True)
     exit(1)
 
-@cli.callback()
+@program.callback()
 def callback(
         protoc_gen_grpc: str = typer.Option("", envvar="PROTOC_GEN_GRPC"),
         protoc_gen_crystal: str = typer.Option("", envvar="PROTOC_GEN_CRYSTAL")
@@ -88,6 +92,6 @@ def callback(
 
 for lang in ['cpp', 'csharp', 'java', 'js', 'objc', 'php', 'ruby']:
     name = f'generate-grpc-{lang}'
-    cli.command(name = name)(create_generator(lang))
+    program.command(name = name)(create_generator(lang))
 
-cli()
+program()
