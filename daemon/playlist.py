@@ -111,14 +111,17 @@ class Playlist:
     def remove(self, target):
         self.queue.pop(target)
 
-    def enqueue(self, song: Song):
+    def enqueue(self, song: Song, as_next: bool = False):
         if len(self.queue) == 0 and self.current is None:
             self.current = song
         else:
-            self.queue.append(song)
+            if as_next:
+                self.queue.insert(0, song)
+            else:
+                self.queue.append(song)
 
-    def enqueue_file(self, path):
-        self.enqueue(self.library.get_song(path))
+    def enqueue_file(self, path, as_next: bool = False):
+        self.enqueue(self.library.get_song(path), as_next)
 
     def get_unplayed(self, amount: int = 3):
         if len(self.unplayed) < amount:

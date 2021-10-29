@@ -112,7 +112,7 @@ class Sonica(SonicaServicer):
             return Result(False, 'Not a valid possibilityid')
 
         filename = self.choices[id].choose()
-        self.playlist.enqueue_file(filename)
+        self.playlist.enqueue_file(filename, request.add_to_top)
         return Result(True)
 
 
