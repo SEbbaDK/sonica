@@ -140,7 +140,7 @@ def start_server(sonica):
     server = grpc.server(ThreadPoolExecutor(max_workers = 4))
     add_SonicaServicer_to_server(sonica, server)
 
-    location = 'localhost:50051'
+    location = 'localhost:7700'
     server.add_insecure_port(location)
     server.start()
     print(f'Server started on {location}')

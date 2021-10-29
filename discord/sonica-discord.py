@@ -9,7 +9,7 @@ from sonica_pb2_grpc import SonicaStub
 from sonica_pb2 import Empty
 
 bot = commands.Bot(command_prefix='')
-channel = grpc.insecure_channel('localhost:50051')
+channel = grpc.insecure_channel('localhost:7700')
 daemon = SonicaStub(channel)
 
 @bot.command()
