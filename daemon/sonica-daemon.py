@@ -34,54 +34,54 @@ class Sonica(SonicaServicer):
     
     def Play(self, request, context):
         self.playlist.play()
-        return Result(success = True)
+        return Result(True)
 
     def Stop(self, request, context):
         self.playlist.stop()
-        return Result(success = True)
+        return Result(True)
 
     def Skip(self, request, context):
         self.playlist.skip()
-        return Result(success = True)
+        return Result(True)
 
     # Queue commands
 
     def Clear(self, request, context):
         if request.value != self.playlist.queue_hash():
-            return Result(success = False, reason = 'Hash mismatch')
+            return Result(False, 'Hash mismatch')
 
         self.playlist.clear()
-        return Result(success = True)
+        return Result(True)
 
     def Shuffle(self, request, context):
         if request.hash.value != self.playlist.queue_hash():
-            return Result(success = False, reason = 'Hash mismatch')
+            return Result(False, 'Hash mismatch')
 
         self.playlist.shuffle()
-        return Result(success = True)
+        return Result(True)
 
     def Move(self, request, context):
         if request.hash.value != self.playlist.queue_hash():
-            return Result(success = False, reason = 'Hash mismatch')
+            return Result(False, 'Hash mismatch')
 
         if request.from_index >= len(self.playlist.queue):
-            return Result(success = False, reason = 'From-value is not a valid index')
+            return Result(False, 'From-value is not a valid index')
 
         if request.to_index >= len(self.playlist.queue):
-            return Result(success = False, reason = 'To-value is not a valid index')
+            return Result(False, 'To-value is not a valid index')
 
         self.playlist.move(request.from_index, request.to_index)
-        return Result(success = True)
+        return Result(True)
 
     def Remove(self, request, context):
         if request.hash.value != self.playlist.queue_hash():
-            return Result(success = False, reason = 'Hash mismatch')
+            return Result(False, 'Hash mismatch')
 
         if request.target >= len(self.playlist.queue):
-            return Result(success = False, reason = 'No song with that id')
+            return Result(False, 'No song with that id')
 
         self.playlist.remove(request.target)
-        return Result(success = True)
+        return Result(True)
 
     # Adding commands
 
