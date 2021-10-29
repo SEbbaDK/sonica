@@ -102,7 +102,7 @@ class Playlist:
             self.play()
 
     def clear(self):
-        self.queue = []
+        self.queue.clear()
 
     def move(self, from_index, to_index):
         s = self.queue.pop(from_index)

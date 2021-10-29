@@ -84,6 +84,11 @@ async def skip(ctx):
 async def stop(ctx):
     await try_command(playlist.stop, ctx.message.channel.send, "I'm not playing anything you dummy >\:(")
 
+@bot.command(brief = 'makes me clear the current queue')
+async def clear(ctx):
+    playlist.cleanse()
+    return await ctx.message.channel.send("The list have now been cleared... You know because i wanted to do it, not because you asked me!")
+
 @bot.command(aliases = ['playlist', 'current', 'playing', 'now'], brief = 'i can tell you what i\'m playing')
 async def queue(ctx):
     return_message = ''
@@ -145,18 +150,47 @@ def player_command(player):
 
         enumerators[ctx.message.channel.id] = EnumeratedOption(options)
 
-        text = "I found a bunch of songs:\n" + "\n".join([
-            f"{index + 1}: {songchoice}"
-            for index, songchoice in enumerate(results)
-        ])
+        if len(options) == 1:
+            text = "I found a single song"
+            await ctx.message.channel.send(text)
+            return await ctx.message.channel.send(await options["1"](ctx.message.channel))
+        else:
+            text = "I found a bunch of songs:\n" + "\n".join([
+                f"{index + 1}: {songchoice}"
+                for index, songchoice in enumerate(results)
+            ])
 
         return await ctx.message.channel.send(text)
 
     # Then return that command
     return result
 
+def deez_arl_auto():
+    try:
+        with open("deezer.secret", "r") as f:
+            temp = f.read()
+            if temp == "":
+                return None
+            return temp
+    except FileNotFoundError:
+        return None
 
-def main(api: str, deez_arl: str = None, folder: str = "music"):
+def bot_token_auto():
+    try:
+        with open("token.secret", "r") as f:
+            temp = f.read()
+            if temp == "":
+                exit("Sorry, you provided no token for Sonica, baka!")
+            return temp
+    except FileNotFoundError:
+        pass
+
+def main(api: str = None, deez_arl: str = None, folder: str = "music"):
+    if deez_arl == None:
+        deez_arl = deez_arl_auto()
+    if api == None:
+        api = bot_token_auto()
+
     global library, playlist, players
     library = Library(folder)
     print(f"Library contains {library.size()} songs")
@@ -169,6 +203,8 @@ def main(api: str, deez_arl: str = None, folder: str = "music"):
     for p in players:
         c = commands.Command(func = player_command(p), name = p.command, brief = p.description)
         bot.add_command(c)
+
+
     playlist.song_changed_subscribe(update_presence)
     bot.run(api)
 
