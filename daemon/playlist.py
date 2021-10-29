@@ -88,11 +88,10 @@ class Playlist:
         self.paused = True
         self.__reset_player()
 
-    def shuffle(self):
+    def shuffle_queue(self):
         random.shuffle(self.queue)
 
-    def shuffleall(self):
-        random.shuffle(self.queue)
+    def shuffle_autoplay(self):
         random.shuffle(self.unplayed)
 
     def skip(self):
@@ -102,19 +101,32 @@ class Playlist:
         if was_playing:
             self.play()
 
-    def cleanse(self):
+    def clear(self):
         self.queue.clear()
 
-    def enqueue(self, song: Song):
+    def move(self, from_index, to_index):
+        s = self.queue.pop(from_index)
+        self.queue.insert(to_index, s)
+
+    def remove(self, target):
+        self.queue.pop(target)
+
+    def enqueue(self, song: Song, as_next: bool = False):
         if len(self.queue) == 0 and self.current is None:
             self.current = song
         else:
-            self.queue.append(song)
+            if as_next:
+                self.queue.insert(0, song)
+            else:
+                self.queue.append(song)
 
-    def enqueue_file(self, path):
-        self.enqueue(self.library.get_song(path))
+    def enqueue_file(self, path, as_next: bool = False):
+        self.enqueue(self.library.get_song(path), as_next)
 
     def get_unplayed(self, amount: int = 3):
         if len(self.unplayed) < amount:
             self.__refill()
         return "\n".join([str(song) for song in self.unplayed[:amount]])
+
+    def queue_hash(self):
+        return hash(tuple(self.queue))

@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+service Sonica {
+    // Playback commands
+	rpc Play (Empty) returns (Result);
+	rpc Stop (Empty) returns (Result);
+	rpc Skip (Empty) returns (Result);
+
+	// Queue commands
+	rpc Clear (Queue.Hash) returns (Result);
+	rpc Shuffle (Queue.ShuffleTargets) returns (Result);
+	rpc Move(Queue.Pair) returns (Result);
+	rpc Remove(Queue.Target) returns (Result);
+
+	// Adding commands
+	rpc Search (Search.Query) returns (Search.Result);
+	rpc Choose (Search.Choice) returns (Result);
+
+	// Info Commands
+	rpc Engines (Empty) returns (EngineList);
+	rpc Status (Status.Query) returns (Status.Info);
+	rpc Library (Empty) returns (LibraryInfo);
+}
+
+message Empty {}
+
+message Result {
+    bool success = 1;
+    string reason = 2;
+}
+
+message Queue {
+
+    message Hash {
+        int64 value = 1;
+    }
+
+    message Target {
+        int32 index = 1;
+    }
+
+    message Pair {
+        Hash hash = 1;
+        Target from_index = 2;
+        Target to_index = 3;
+    }
+
+    message ShuffleTargets {
+        Hash hash = 1;
+        bool queue = 2;
+        bool autoplay = 3;
+    }
+
+}
+
+message Search {
+    
+    message Query {
+        repeated string query = 1;
+        repeated string engines = 2;
+    }
+
+    message Result {
+        message EngineResult {
+            string name = 1;
+            map<int64, Song> possibilities = 2;
+        }
+        repeated EngineResult results = 1;
+    }
+
+    message Choice {
+        int64 possibility_id = 1;
+        bool add_to_top = 2;
+    }
+    
+}
+
+message Song {
+	string title = 1;
+	string artist = 2;
+	string album = 3;
+}
+
+message EngineList {
+    repeated string engines = 1;
+}
+
+message Status {
+    
+    message Query {
+    	int32 queue_max = 1;
+    	int32 autoplay_max = 2;
+    }
+
+    message Info {
+    	Song current = 1;
+    	int32 length = 2;
+    	int32 progress = 3;
+
+    	int32 queue_length = 4;
+    	int64 queue_hash = 5;
+    	repeated Song queue = 6;
+    	repeated Song autoplay = 7;
+    }
+    
+}
+
+message LibraryInfo {
+    int64 size = 1;
+    repeated Song songs = 2;
+}

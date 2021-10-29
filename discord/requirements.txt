@@ -1,0 +1,3 @@
+grpcio
+discord.py
+typer

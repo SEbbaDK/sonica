@@ -5,6 +5,7 @@ class Song:
     path: str
     title: str
     artist: str
+    album: str
     tags: list
 
     def __str__(self):
