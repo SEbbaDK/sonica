@@ -57,12 +57,12 @@ class Sonica(SonicaServicer):
         if request.hash.value != self.playlist.queue_hash():
             return Result(False, 'Hash mismatch')
 
-		if request.queue
+        if request.queue:
             self.playlist.shuffle_queue()
-        if request.autoplay
-        	self.playlist.shuffle_autoplay()
-        if not request.queue and not request.autoplay
-        	return Result(False, "Shuffling flags were both false")
+        if request.autoplay:
+            self.playlist.shuffle_autoplay()
+        if not request.queue and not request.autoplay:
+            return Result(False, "Shuffling flags were both false")
         return Result(True)
 
     def Move(self, request, context):

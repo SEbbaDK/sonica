@@ -1,0 +1,6 @@
+grpcio
+typer
+deemix
+pytaglib
+pydub
+simpleaudio
