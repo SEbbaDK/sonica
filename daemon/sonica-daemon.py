@@ -124,8 +124,8 @@ class Sonica(SonicaServicer):
 
             queue_length = len(self.playlist.queue),
             queue_hash = self.playlist.queue_hash(),
-            queue = self.playlist.queue[0:request.queue_max],
-            autoplay = self.playlist.autoplay[0:request.autoplay_max],
+            queue = self.playlist.queue[:request.queue_max],
+            autoplay = self.playlist.autoplay[:request.autoplay_max],
         )
 
     def Library(self, request, context):
