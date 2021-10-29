@@ -8,3 +8,9 @@ sonica_pb2_grpc.py
 sonica_pb2.py
 sonica.pb.cr
 sonica_services.pb.cr
+
+# Files created when installing crystal and shards locally
+bin/
+lib/
+shard.lock
+shard.yml

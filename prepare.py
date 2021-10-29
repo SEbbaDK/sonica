@@ -85,7 +85,6 @@ def callback(
         options["protoc_gen_crystal"] = protoc_gen_crystal
 
     if protoc_gen_grpc == "":
-        op
         error("PROTOC_GEN_GRPC needs to be given as an option or be in the environment\n" + crystal_url)
     else:
         options["protoc_gen_grpc"] = protoc_gen_grpc
