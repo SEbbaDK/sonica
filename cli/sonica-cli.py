@@ -13,8 +13,6 @@ def songformat(song):
     return f'{ansi(1, song.title)} by {song.artist}'
 
 cli = typer.Typer()
-channel = grpc.insecure_channel('localhost:7700')
-daemon = SonicaStub(channel)
 
 @cli.command()
 def play():
@@ -94,5 +92,12 @@ def status(queue_max : int = -1, autoplay_max : int = 10):
     for s in r.autoplay:
         counter += 1
         print(f'{str(counter).rjust(3)}: {songformat(s)}')
+
+@cli.callback()
+def callback(host: str = 'localhost', port: int = 7700):
+    global daemon
+    connection = f'{host}:{port}'
+    channel = grpc.insecure_channel(connection)
+    daemon = SonicaStub(channel)
 
 cli()
