@@ -1,17 +1,21 @@
 #!/usr/bin/env python
 
 from concurrent.futures import ThreadPoolExecutor
+from random import randint
 
 import grpc
 import typer
 
-from sonica_pb2 import Status, Result, EngineList, Song
+from sonica_pb2 import Status, Result, Song, Search, LibraryInfo, EngineList
 from sonica_pb2_grpc import SonicaServicer, add_SonicaServicer_to_server
 
 import song
 from library import Library
 from playlist import Playlist
 from players import LibraryPlayer, DeezPlayer
+
+def randint64():
+    return randint(-9223372036854775808, 9223372036854775807)
 
 def songify(song):
     if song is None:
@@ -34,74 +38,80 @@ class Sonica(SonicaServicer):
     
     def Play(self, request, context):
         self.playlist.play()
-        return Result(True)
+        return Result(success = True, reason = '')
 
     def Stop(self, request, context):
         self.playlist.stop()
-        return Result(True)
+        return Result(success = True, reason = '')
 
     def Skip(self, request, context):
         self.playlist.skip()
-        return Result(True)
+        return Result(success = True, reason = '')
 
     # Queue commands
 
     def Clear(self, request, context):
         if request.value != self.playlist.queue_hash():
-            return Result(False, 'Hash mismatch')
+            return Result(success = False, reason = 'Hash mismatch')
 
         self.playlist.clear()
-        return Result(True)
+        return Result(success = True, reason = '')
 
     def Shuffle(self, request, context):
         if request.hash.value != self.playlist.queue_hash():
-            return Result(False, 'Hash mismatch')
+            return Result(success = False, reason = 'Hash mismatch')
 
         if request.queue:
             self.playlist.shuffle_queue()
         if request.autoplay:
             self.playlist.shuffle_autoplay()
         if not request.queue and not request.autoplay:
-            return Result(False, "Shuffling flags were both false")
-        return Result(True)
+            return Result(success = False, reason = "Shuffling flags were both false")
+        return Result(success = True, reason = '')
 
     def Move(self, request, context):
         if request.hash.value != self.playlist.queue_hash():
-            return Result(False, 'Hash mismatch')
+            return Result(success = False, reason = 'Hash mismatch')
 
         if request.from_index >= len(self.playlist.queue):
-            return Result(False, 'From-value is not a valid index')
+            return Result(success = False, reason = 'From-value is not a valid index')
 
         if request.to_index >= len(self.playlist.queue):
-            return Result(False, 'To-value is not a valid index')
+            return Result(success = False, reason = 'To-value is not a valid index')
 
         self.playlist.move(request.from_index, request.to_index)
-        return Result(True)
+        return Result(success = True, reason = '')
 
     def Remove(self, request, context):
         if request.hash.value != self.playlist.queue_hash():
-            return Result(False, 'Hash mismatch')
+            return Result(success = False, reason = 'Hash mismatch')
 
         if request.target >= len(self.playlist.queue):
-            return Result(False, 'No song with that id')
+            return Result(success = False, reason = 'No song with that id')
 
         self.playlist.remove(request.target)
-        return Result(True)
+        return Result(success = True, reason = '')
 
     # Adding commands
 
     def Search(self, request, context):
+        # This should change when players actually differentiate strings for repeated search
+        querystring = ' '.join(request.query)
+
         results = []
         for p in self.players:
-            search = p.search(request.query)
+            search = p.search(querystring)
             map = {}
 
             for r in search:
                 id = randint64()
                 self.choices[id] = r
-                map[id] = Song(r.title, r.artist, '')
+                map[id] = Song( title = r.title, artist = r.artist, album = '')
 
-            engine_result = EngineResult(p.name, map)
+            engine_result = Search.Result.EngineResult(
+                name = p.name,
+                possibilities = map,
+            )
             results.append(engine_result)
 
         return Search.Result(results = results)
@@ -109,28 +119,38 @@ class Sonica(SonicaServicer):
     def Choose(self, request, context):
         id = request.possibility_id
         if not id in self.choices:
-            return Result(False, 'Not a valid possibilityid')
+            return Result(success = False, reason = 'Not a valid possibilityid')
 
         filename = self.choices[id].choose()
         self.playlist.enqueue_file(filename, request.add_to_top)
-        return Result(True)
+        return Result(success = True, reason = '')
 
 
     # Info commands
 
     def Engines(self, request, context):
-        return EngineList(engines = [ e.name for e in players ])
+        return EngineList(engines = [ e.name for e in self.players ])
 
     def Status(self, request, context):
+        queue = [ songify(s) for s in self.playlist.queue ]
+        if request.queue_max != -1 and len(queue) != 0:
+            queue = list(queue[0:request.queue_max])
+
+        autoplay = [ songify(s) for s in self.playlist.get_unplayed() ]
+        if request.autoplay_max != -1 and len(autoplay) != 0:
+            autoplay = list(autoplay[0:request.autoplay_max])
+
         return Status.Info(
             current = songify(self.playlist.current),
             length = 1, # TODO: This should actually do something
             progress = 0,
 
+            # Note these work on the full list
             queue_length = len(self.playlist.queue),
             queue_hash = self.playlist.queue_hash(),
-            queue = self.playlist.queue[:request.queue_max],
-            autoplay = self.playlist.autoplay[:request.autoplay_max],
+
+            queue = queue,
+            autoplay = autoplay,
         )
 
     def Library(self, request, context):

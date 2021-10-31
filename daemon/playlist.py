@@ -123,10 +123,10 @@ class Playlist:
     def enqueue_file(self, path, as_next: bool = False):
         self.enqueue(self.library.get_song(path), as_next)
 
-    def get_unplayed(self, amount: int = 3):
-        if len(self.unplayed) < amount:
+    def get_unplayed(self, min_amount: int = 5):
+        if len(self.unplayed) < min_amount:
             self.__refill()
-        return "\n".join([str(song) for song in self.unplayed[:amount]])
+        return self.unplayed
 
     def queue_hash(self):
         return hash(tuple(self.queue))
