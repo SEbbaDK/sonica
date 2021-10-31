@@ -35,7 +35,7 @@ def skip():
 @cli.command()
 def search(query : str, engines : str = ''):
     q = [query] # The daemon asks for a list of queries
-    e = engines.split(',') if engines != '' else ["deez"]
+    e = engines.split(',') if engines != '' else []
     r = daemon.Search(Search.Query( query = q, engines = e))
 
     counter = 0
