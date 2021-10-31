@@ -66,7 +66,7 @@ def http():
 
 @program.command()
 def cli():
-    generate_grpc_crystal('cli')
+    generate_grpc_python('cli')
 
 def error(text: str):
     typer.secho(text, fg = typer.colors.RED, err = True)
