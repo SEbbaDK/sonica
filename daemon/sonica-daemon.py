@@ -37,16 +37,25 @@ class Sonica(SonicaServicer):
     # Playback commands
     
     def Play(self, request, context):
-        self.playlist.play()
-        return Result(success = True, reason = '')
+        try:
+            self.playlist.play()
+            return Result(success = True, reason = '')
+        except Exception as e:
+            return Result(success = False, reason = str(e))
 
     def Stop(self, request, context):
-        self.playlist.stop()
-        return Result(success = True, reason = '')
+        try:
+            self.playlist.stop()
+            return Result(success = True, reason = '')
+        except Exception as e:
+            return Result(success = False, reason = str(e))
 
     def Skip(self, request, context):
-        self.playlist.skip()
-        return Result(success = True, reason = '')
+        try:
+            self.playlist.skip()
+            return Result(success = True, reason = '')
+        except Exception as e:
+            return Result(success = False, reason = str(e))
 
     # Queue commands
 
