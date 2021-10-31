@@ -10,7 +10,7 @@ def ansi(code, text):
     return f'\x00\x1B[{code}m{text}\x00\x1B[m'
 
 def songformat(song):
-    return f'{ansi(1, song.title)} by {song.artist}'
+    return f'{ansi(1, song.title)} - {ansi(3, song.artist)}'
 
 cli = typer.Typer()
 
