@@ -16,15 +16,21 @@ cli = typer.Typer()
 
 @cli.command()
 def play():
-    daemon.Play(Empty())
+    r = daemon.Play(Empty())
+    if not r.success:
+        print(ansi(31, r.reason))
 
 @cli.command()
 def stop():
-    daemon.Stop(Empty())
+    r = daemon.Stop(Empty())
+    if not r.success:
+        print(ansi(31, r.reason))
 
 @cli.command()
 def skip():
-    daemon.Skip(Empty())
+    r = daemon.Skip(Empty())
+    if not r.success:
+        print(ansi(31, r.reason))
 
 @cli.command()
 def search(query : str, engines : str = ''):
@@ -42,7 +48,7 @@ def search(query : str, engines : str = ''):
             for id, song in e.possibilities.items():
                 counter += 1
                 print(f'{counter}: {songformat(song)}')
-                map[counter] = id
+                map[counter] = (id, song)
 
     while True:
         next = False
@@ -62,10 +68,14 @@ def search(query : str, engines : str = ''):
                 print('Not a valid choice')
                 continue
 
-            choice = map[selection]
-            r = daemon.Choose(Search.Choice(possibility_id = choice, add_to_top = next))
-            print(r)
-            return # We are done, quit
+            chosen_id, chosen_song = map[selection]
+            r = daemon.Choose(Search.Choice(possibility_id = chosen_id, add_to_top = next))
+            if r.success:
+            	print(f'Queued: {songformat(chosen_song)}')
+            	exit(0)
+            else:
+                print(ansi(31, f'Addition failed: »{r.reason}«'))
+                exit(1)
         except e:
             print(e)
 
