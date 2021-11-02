@@ -21,18 +21,24 @@ async def play(ctx):
     r = daemon.Play(Empty())
     if not r.success:
         await ctx.message.channel.send(r.reason)
+    else:
+        await ctx.message.channel.send("Okie, i'll play")
 
 @bot.command()
 async def stop(ctx):
     r = daemon.Stop(Empty())
     if not r.success:
         await ctx.message.channel.send(r.reason)
+    else:
+        await ctx.message.channel.send("Okie, i'll stop then :(")
 
 @bot.command()
 async def skip(ctx):
     r = daemon.Skip(Empty())
     if not r.success:
         await ctx.message.channel.send(r.reason)
+    else:
+        await ctx.message.channel.send("I'm just playing what you ask me to, but okay :/")
 
 enumerators = {}
 
