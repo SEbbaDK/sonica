@@ -56,7 +56,7 @@ async def search(ctx, *queries):
                 counter += 1
                 mes += f'{counter}: {songformat(song)}\n'
                 map[counter] = (id, song)
-
+        mes += '\n'
     enumerators[ctx.message.channel] = map
     await ctx.message.channel.send(mes)
 
