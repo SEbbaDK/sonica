@@ -2,8 +2,7 @@
 , mkDerivation ? pkgs.stdenv.mkDerivation
 }:
 mkDerivation rec {
-	pname = "sonica-discord";
-	version = "0.1";
+	name = "sonica-discord";
 
 	python = pkgs.python39;
 	pythonPackages = python.withPackages (pkg: with pkg; [

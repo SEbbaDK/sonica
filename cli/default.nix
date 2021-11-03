@@ -2,8 +2,7 @@
 , mkDerivation ? pkgs.stdenv.mkDerivation
 }:
 mkDerivation rec {
-	pname = "sonica-cli";
-	version = "0.1";
+	name = "sonica-cli";
 
 	python = pkgs.python39;
 	pythonPackages = python.withPackages (pkg: with pkg; [

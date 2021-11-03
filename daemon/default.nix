@@ -2,8 +2,7 @@
 , mkDerivation ? pkgs.stdenv.mkDerivation
 }:
 mkDerivation rec {
-	pname = "sonica-daemon";
-	version = "0.1";
+	name = "sonica-daemon";
 
 	python = pkgs.python39;
 	pythonPackages = python.withPackages (pkg: with pkg; [
