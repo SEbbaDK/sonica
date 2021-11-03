@@ -76,7 +76,7 @@ def search(query : str, engines : str = ''):
             else:
                 print(ansi(31, f'Addition failed: »{r.reason}«'))
                 exit(1)
-        except e:
+        except Exception as e:
             print(e)
 
 @cli.command()
