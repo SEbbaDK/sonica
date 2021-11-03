@@ -1,35 +1,15 @@
-{ pkgs ? import <nixpkgs> {}
-, grpc-tools ? pkgs.grpc-tools
-, callPackage ? pkgs.callPackage
-}:
-let
-	grpc = callPackage ./grpc/shell.nix {};
-in
+{ pkgs ? import <nixpkgs> {} }:
 pkgs.mkShell rec {
     name = "sonica-shell";
 
+	python = pkgs.python39.withPackages (pypkgs: map (p: pypkgs.${p}) pythonPackages);
 	pythonPackages = [
 		"typer"
-		"grpcio"
-		"grpcio-tools"
+		"pyyaml"
 	];
 
-	crystal-grpc = callPackage ./nix/crystal-grpc.nix {};
-	crystal-protobuf = callPackage ./nix/crystal-protobuf.nix {};
-
     buildInputs = [
-
-		grpc-tools
-
-        crystal-grpc
-        crystal-protobuf
-
-		(pkgs.python39.withPackages (pypkgs:
-			map (p: pypkgs.${p}) pythonPackages
-		))
-
+        python
+		pkgs.openapi-generator-cli
     ];
-
-	PROTOC_GEN_CRYSTAL = "${crystal-protobuf}/bin/protoc-gen-crystal";
-	PROTOC_GEN_GRPC = "${crystal-grpc}/bin/grpc_crystal";
 }
