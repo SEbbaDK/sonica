@@ -1,0 +1,53 @@
+openapi: 3.0.1
+info:
+    title: Sonica
+    description: 'This is the spec for the Sonica music system.
+        More info at [sebbadk/sonica](http://github.com/sebbadk/sonica).'
+    version: 0.2.0
+paths:
+    # =================
+    # Playback Commands
+    # =================
+    /play:
+        post:
+            operationId: play
+            summary: Start playing music
+            responses:
+                200: { description: Playing started }
+                400: { description: Was already playing }
+    /pause:
+        post:
+            operationId: pause
+            summary: Pause playing music and save the current playback position
+            responses:
+                200: { description: Playing started }
+                400: { description: Was already playing }
+    /stop:
+        post:
+            operationId: stop
+            summary: Stop playing music and reset playback position
+            responses:
+                200: { description: Playing started }
+                400: { description: Was already stopped }
+
+    # ==============
+    # Queue Commands
+    # ==============
+    /skip:
+        post:
+            operationId: skip
+            summary: Skip currently playing song
+            responses:
+                200: { description: Skipped song }
+
+    # =============
+    # Info Commands
+    # =============
+    /status:
+        get:
+            operationId: status
+            summary: Get information about current server
+            responses:
+                200:
+                    description: Info about the current state of the player
+
