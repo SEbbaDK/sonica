@@ -16,7 +16,7 @@ paths:
         #         200:
         #             description: Get current state of play
         #             content:
-        #                 '*/*': { schema: { $ref: '#/components/schemas/Playstate' } }
+        #                 '*/*': { schema: { $ref: '#/components/schemas/PlayState' } }
         put:
             operationId: sonicad.set_playstate
             summary: Set current state of play
@@ -24,7 +24,7 @@ paths:
                 description: New state
                 required: true
                 content:
-                    '*/*': { schema: { $ref: '#/components/schemas/Playstate' } }
+                    '*/*': { schema: { $ref: '#/components/schemas/PlayState' } }
             responses:
                 200: { description: Playing started }
                 400: { description: Invalid input }
@@ -43,10 +43,12 @@ paths:
         get:
             operationId: sonicad.search
             summary: Perform a search in engines
-            requestBody:
+            parameters:
+              - in: query
+                name: query
                 description: Search query
                 required: true
-                content: { '*/*': { schema: { type: string } } }
+                schema: { type: string }
             responses:
                 200:
                     description: Returns search
@@ -163,7 +165,7 @@ paths:
 components:
     schemas:
 
-        Playstate:
+        PlayState:
             type: string
             description: Current state of play
             enum:
@@ -202,7 +204,7 @@ components:
                     type: string
                 length:
                     description: Length of song in seconds
-                    type: int
+                    type: integer
                     minimum: 0
 
         EngineList:
@@ -220,12 +222,12 @@ components:
                     $ref: '#/components/schemas/PlayState'
                 progress:
                     description: Current play progress in seconds
-                    type: int
+                    type: integer
                     minimum: 0
                     nullable: true
                 queue_length:
                     description: The total length of the queue (not affected by limit)
-                    type: int
+                    type: integer
                     minimum: 0
                 queue:
                     $ref: '#/components/schemas/SongList'
