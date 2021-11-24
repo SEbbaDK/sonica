@@ -2,11 +2,11 @@
 , mkDerivation ? pkgs.stdenv.mkDerivation
 }:
 mkDerivation rec {
-	name = "sonica-daemon";
+	name = "sonicad";
 
 	python = pkgs.python39;
-	pythonPackages = python.withPackages (pkg: with pkg; [
-		grpcio
+	pythonWithPkgs = python.withPackages (pkg: with pkg; [
+    	connexion
 		typer
 		
 		# Loading from youtube
@@ -22,6 +22,6 @@ mkDerivation rec {
 	]);
 
 	nativeBuildInputs = [
-		pythonPackages
+		pythonWithPkgs
 	];
 }
