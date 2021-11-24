@@ -8,46 +8,227 @@ paths:
     # =================
     # Playback Commands
     # =================
-    /play:
-        post:
-            operationId: play
-            summary: Start playing music
+    /playstate:
+        # get:
+        #     operationId: sonicad.get_playstate
+        #     summary: Get current state of play
+        #     responses:
+        #         200:
+        #             description: Get current state of play
+        #             content:
+        #                 '*/*': { schema: { $ref: '#/components/schemas/Playstate' } }
+        put:
+            operationId: sonicad.set_playstate
+            summary: Set current state of play
+            requestBody:
+                description: New state
+                required: true
+                content:
+                    '*/*': { schema: { $ref: '#/components/schemas/Playstate' } }
             responses:
                 200: { description: Playing started }
-                400: { description: Was already playing }
-    /pause:
-        post:
-            operationId: pause
-            summary: Pause playing music and save the current playback position
-            responses:
-                200: { description: Playing started }
-                400: { description: Was already playing }
-    /stop:
-        post:
-            operationId: stop
-            summary: Stop playing music and reset playback position
-            responses:
-                200: { description: Playing started }
-                400: { description: Was already stopped }
+                400: { description: Invalid input }
 
     # ==============
     # Queue Commands
     # ==============
     /skip:
         post:
-            operationId: skip
+            operationId: sonicad.skip
             summary: Skip currently playing song
             responses:
                 200: { description: Skipped song }
+
+    /search:
+        get:
+            operationId: sonicad.search
+            summary: Perform a search in engines
+            requestBody:
+                description: Search query
+                required: true
+                content: { '*/*': { schema: { type: string } } }
+            responses:
+                200:
+                    description: Returns search
+                    content:
+                        'application/json':
+                            schema: { $ref: '#/components/schemas/SearchResult' }
+    
+    /queue/enqueue:
+        post:
+            operationId: sonicad.enqueue
+            summary: Add songs to queue
+            requestBody:
+                description: List of ids to add
+                required: true
+                content: { '*/*': { schema: { type: string } } }
+            responses:
+                200: { description: Song/songs added }
+                400: { description: Input not valid songs }
+
+    /queue/dequeue:
+        post:
+            operationId: sonicad.dequeue
+            summary: Remove a song from the queue
+            parameters:
+              - in: query
+                name: index
+                schema:
+                    type: integer
+                required: true
+            responses:
+                200: { description: Song removed from queue }
+                404: { description: No such song }
+
+    /queue/shuffle:
+        post:
+            operationId: sonicad.shuffle
+            summary: Shuffles queue
+            responses:
+                200: { description: queue shuffled }
+
+    /queue/reorder:
+        post:
+            operationId: sonicad.reorder
+            summary: Move a song in the queue
+            parameters:
+              - in: query
+                name: from
+                schema:
+                    type: integer
+                required: true
+              - in: query
+                name: to
+                schema:
+                    type: integer
+                required: true
+            responses:
+                200: { description: Song removed from queue }
+                404: { description: No such song }
+
+    /queue/clear:
+        post:
+            operationId: sonicad.clear
+            summary: Clear the queue
+            responses:
+                200: { description: Queue cleared }
 
     # =============
     # Info Commands
     # =============
     /status:
         get:
-            operationId: status
+            operationId: sonicad.status
             summary: Get information about current server
+            parameters:
+              - in: query
+                name: queue_limit
+                description: Max songs from queue to return
+                schema:
+                    type: integer
+              - in: query
+                name: autoplay_limit
+                description: Max songs from autoplay to return
+                schema:
+                    type: integer
             responses:
                 200:
                     description: Info about the current state of the player
+                    content:
+                        'application/json':
+                            schema: { $ref: '#/components/schemas/Status' }
+
+    /engines:
+        get:
+            operationId: sonicad.engines
+            summary: Get all the engines supported by current daemon
+            responses:
+                200:
+                    description: A list of engine names supported by the daemon
+                    content:
+                        'application/json':
+                            schema: { $ref: '#/components/schemas/EngineList' }
+
+    /library:
+        get:
+            operationId: sonicad.library
+            summary: Get a list of songs in the library
+            responses:
+                200:
+                    description: A list of song objects
+                    content:
+                        'application/json':
+                            schema: { $ref: '#/components/schemas/SongList' }
+
+components:
+    schemas:
+
+        Playstate:
+            type: string
+            description: Current state of play
+            enum:
+            - playing
+            - stopped
+            - paused
+
+        SearchResult:
+            type: array
+            items:
+                $ref: '#/components/schemas/EngineResults'
+
+        EngineResults:
+            type: object
+            properties:
+                name:
+                    type: string
+                songs:
+                    $ref: '#/components/schemas/SongList'
+
+        SongList:
+            type: array
+            items:
+                $ref: '#/components/schemas/Song'
+
+        Song:
+            type: object
+            properties:
+                title:
+                    type: string
+                artist:
+                    type: string
+                album:
+                    type: string
+                cover:
+                    type: string
+                length:
+                    description: Length of song in seconds
+                    type: int
+                    minimum: 0
+
+        EngineList:
+            type: array
+            items:
+                type: string
+
+        Status:
+            type: object
+            properties:
+                current:
+                    type: string
+                    nullable: true
+                playstate:
+                    $ref: '#/components/schemas/PlayState'
+                progress:
+                    description: Current play progress in seconds
+                    type: int
+                    minimum: 0
+                    nullable: true
+                queue_length:
+                    description: The total length of the queue (not affected by limit)
+                    type: int
+                    minimum: 0
+                queue:
+                    $ref: '#/components/schemas/SongList'
+                autoplay:
+                    $ref: '#/components/schemas/SongList'
 
