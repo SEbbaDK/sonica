@@ -1,0 +1,8 @@
+name: sonicac
+version: 0.1.0
+
+dependencies:
+    crest:
+        github: mamantoha/crest
+        version: ~> 0.26.0
+

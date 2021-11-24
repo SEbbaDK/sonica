@@ -2,15 +2,13 @@
 , mkDerivation ? pkgs.stdenv.mkDerivation
 }:
 mkDerivation rec {
-	name = "sonica-cli";
+	name = "sonicac";
 
-	python = pkgs.python39;
-	pythonPackages = python.withPackages (pkg: with pkg; [
-		grpcio
-		typer
-	]);
-
-	nativeBuildInputs = [
-		pythonPackages
+	buildInputs = with pkgs; [
+    	shards
+    	crystal
+    	pkg-config
+    	openssl
+    	openssl.out
 	];
 }
