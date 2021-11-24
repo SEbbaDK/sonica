@@ -33,31 +33,42 @@ def validate():
     run(f'openapi-generator-cli validate -i {o.filename}')
 
 @program.command()
-def crystal_client():
+def crystal():
     ensure_generated_folder()
     run(' '.join([
         'openapi-generator-cli generate',
         f'-i {o.filename}',
-        '-o ./generated/crystal-client',
+        '-o ./generated/crystal',
         '-g crystal',
-        '-p shardName=sonica',
+        '-p moduleName=Sonica',
+        '-p shardName=sonica-client',
         '-p shardAuthor=sonica-team',
         f'-p shardVersion={o.version}',
     ]))
+
+    # We also replace some old pre 1.0 crystal syntax
+    conffile = './generated/crystal/src/sonica-client/configuration.cr'
+    with open(conffile, 'r') as f:
+        lines = f.readlines()
+    with open(conffile, 'w') as f:
+        f.writelines([
+            l.replace('Hash{       }', '{} of String => String')
+            for l in lines
+        ])
 
 @program.command()
 def python_server():
     ensure_generated_folder()
     run(' '.join([
-		'openapi-generator-cli generate',
-		f'-i {o.filename}',
-		'-o ./generated/python',
-		'-g python',
+        'openapi-generator-cli generate',
+        f'-i {o.filename}',
+        '-o ./generated/python',
+        '-g python',
     ]))
 
 @program.command()
 def all():
-	crystal()
+    crystal()
 
 @program.callback()
 def callback(verbose : bool = False, filename : str = None):
