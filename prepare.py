@@ -58,6 +58,7 @@ def crystal():
 
 @program.command()
 def python_server():
+    print('For python use, it is recommended to use connexion')
     ensure_generated_folder()
     run(' '.join([
         'openapi-generator-cli generate',
