@@ -2,6 +2,10 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from random import randint
+import sys
+import os
+import pathlib
+from typing import List
 
 import grpc
 import typer
@@ -12,7 +16,6 @@ from sonica_pb2_grpc import SonicaServicer, add_SonicaServicer_to_server
 import song
 from library import Library
 from playlist import Playlist
-from players import LibraryPlayer, DeezPlayer
 
 def randint64():
     return randint(-9223372036854775808, 9223372036854775807)
@@ -28,10 +31,10 @@ def songify(song):
         )
 
 class Sonica(SonicaServicer):
-    def __init__(self, library, players):
+    def __init__(self, library, engines):
         self.library = library
         self.playlist = Playlist(library)
-        self.players = players
+        self.engines = engines
         self.choices = {}
 
     # Playback commands
@@ -169,7 +172,6 @@ class Sonica(SonicaServicer):
         )
 
 
-
 def start_server(sonica):
     server = grpc.server(ThreadPoolExecutor(max_workers = 4))
     add_SonicaServicer_to_server(sonica, server)
@@ -180,16 +182,35 @@ def start_server(sonica):
     print(f'Server started on {location}')
     server.wait_for_termination()
 
-def main(deez_arl : str = None, dir : str = 'music'):
-    library = Library(dir)
+def opts_to_map(opts: List[str]):
+    m = {}
+    for s in opts:
+        k, v = s.split("=")
+        engine, name = k.split(":")
+        if not engine in m:
+            m[engine] = {}
+        m[engine][name] = v
+    return m
+
+def main(deez_arl : str = None, music_dir : str = 'music', engines_dir : str = 'engines', engine_opt : List[str] = []):
+    library = Library(music_dir)
     print(f"Library contains {library.size()} songs")
 
-    players = []
-    players.append( LibraryPlayer(library) )
-    #players.append( YoutubePlayer() )
-    if deez_arl:
-        players.append( DeezPlayer(deez_arl) )
+    engine_opts = opts_to_map(engine_opt)
 
-    start_server(Sonica(library, players))
+    engines = []
+    path = pathlib.Path(engines_dir).absolute()
+    sys.path.insert(1, str(path))
+
+    for item in os.listdir(path):
+        if ".py" in item and item != "engine.py":
+            lib = item.replace(".py", "") # test_engine.py => test_engine
+            name = lib.replace("_engine", "") # test_engine => test
+            eclass = lib.title().replace("_", "") # test_engine => TestEngine
+            print(f"Loading {eclass} from {item}")
+            opts = engine_opts[name] if name in engine_opts else {}
+            e = getattr(__import__(lib), eclass)(library, opts)
+
+    start_server(Sonica(library, engines))
 
 typer.run(main)
