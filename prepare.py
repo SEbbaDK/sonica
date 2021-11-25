@@ -38,6 +38,31 @@ def generate_grpc_python(dir: str):
     ]))
 
 @program.command()
+def generate_grpc_go(dir: str):
+    """
+    Generates the go protobuf spec and grpc clients/server from the sonica service spec.
+    """
+    run_command(' '.join([
+        f'protoc',
+
+        f'--plugin=protoc-gen-go={options["protoc_gen_go"]}',
+        f'--plugin=protoc-gen-go-grpc={options["protoc_gen_go_grpc"]}',
+
+        f'--go-grpc_out={dir}',
+        #f'--go_opt paths=source_relative',
+
+        f'--go_out={dir}',
+        #f'--go-grpc-opt=paths=source_relative',
+
+        #f'--grpc-gateway_out={dir}',
+        #f'--grpc-gateway_opt=logtostderr=true',
+        #f'--grpc-gateway_opt=paths=source_relative',
+        #f'--grpc-gateway_opt=generate_unbound_methods=true',
+
+        f'sonica.proto',
+    ]))
+
+@program.command()
 def generate_grpc_crystal(dir: str):
     """
     Generates the crystal protobuf spec and grpc clients/server from the sonica service spec.
@@ -75,7 +100,9 @@ def error(text: str):
 @program.callback()
 def callback(
         protoc_gen_grpc: str = typer.Option("", envvar="PROTOC_GEN_GRPC"),
-        protoc_gen_crystal: str = typer.Option("", envvar="PROTOC_GEN_CRYSTAL")
+        protoc_gen_crystal: str = typer.Option("", envvar="PROTOC_GEN_CRYSTAL"),
+        protoc_gen_go: str = typer.Option("", envvar="PROTOC_GEN_GO"),
+        protoc_gen_go_grpc: str = typer.Option("", envvar="PROTOC_GEN_GO_GRPC")
     ):
     crystal_url = "Check https://github.com/jgaskins/grpc for info on how to get the binaries";
 
@@ -88,6 +115,18 @@ def callback(
         error("PROTOC_GEN_GRPC needs to be given as an option or be in the environment\n" + crystal_url)
     else:
         options["protoc_gen_grpc"] = protoc_gen_grpc
+
+    go_url = "Check https://github.com/grpc-ecosystem/grpc-gateway/ for info on how to set the binaries"
+
+    if protoc_gen_go == "":
+        error("PROTOC_GEN_GO needs to be given as an option or be in the environment\n" + go_url)
+    else:
+        options["protoc_gen_go"] = protoc_gen_go
+
+    if protoc_gen_go_grpc == "":
+        error("PROTOC_GEN_GO_GRPC needs to be given as an option or be in the environment\n" + go_url)
+    else:
+        options["protoc_gen_go_grpc"] = protoc_gen_go_grpc
 
 for lang in ['cpp', 'csharp', 'java', 'js', 'objc', 'php', 'ruby']:
     name = f'generate-grpc-{lang}'
