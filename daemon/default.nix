@@ -10,8 +10,8 @@ mkDerivation rec {
 		typer
 		
 		# Loading from youtube
-		#youtube-dl
-		#youtube-search
+		youtube-dl
+		youtube-search
 		# Loading from deezer
 		deemix
 		# Reading and writing tags
