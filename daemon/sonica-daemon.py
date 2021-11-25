@@ -107,12 +107,12 @@ class Sonica(SonicaServicer):
     # Adding commands
 
     def Search(self, request, context):
-        # This should change when players actually differentiate strings for repeated search
+        # This should change when engines actually differentiate strings for repeated search
         querystring = ' '.join(request.query)
 
         results = []
-        for p in self.players:
-            search = p.search(querystring)
+        for e in self.engines:
+            search = e.search(querystring)
             map = {}
 
             for r in search:
@@ -121,7 +121,7 @@ class Sonica(SonicaServicer):
                 map[id] = Song( title = r.title, artist = r.artist, album = '')
 
             engine_result = Search.Result.EngineResult(
-                name = p.name,
+                name = e.name,
                 possibilities = map,
             )
             results.append(engine_result)
@@ -141,7 +141,7 @@ class Sonica(SonicaServicer):
     # Info commands
 
     def Engines(self, request, context):
-        return EngineList(engines = [ e.name for e in self.players ])
+        return EngineList(engines = [ e.name for e in self.engines ])
 
     def Status(self, request, context):
         queue = [ songify(s) for s in self.playlist.queue ]
@@ -172,11 +172,11 @@ class Sonica(SonicaServicer):
         )
 
 
-def start_server(sonica):
+def start_server(sonica, port):
     server = grpc.server(ThreadPoolExecutor(max_workers = 4))
     add_SonicaServicer_to_server(sonica, server)
 
-    location = 'localhost:7700'
+    location = f'localhost:{port}'
     server.add_insecure_port(location)
     server.start()
     print(f'Server started on {location}')
@@ -192,7 +192,12 @@ def opts_to_map(opts: List[str]):
         m[engine][name] = v
     return m
 
-def main(deez_arl : str = None, music_dir : str = 'music', engines_dir : str = 'engines', engine_opt : List[str] = []):
+def main(
+		port : int = 7700,
+    	music_dir : str = 'music',
+    	engines_dir : str = 'engines',
+    	engine_opt : List[str] = []
+    ):
     library = Library(music_dir)
     print(f"Library contains {library.size()} songs")
 
@@ -210,7 +215,8 @@ def main(deez_arl : str = None, music_dir : str = 'music', engines_dir : str = '
             print(f"Loading {eclass} from {item}")
             opts = engine_opts[name] if name in engine_opts else {}
             e = getattr(__import__(lib), eclass)(library, opts)
+            engines.append(e)
 
-    start_server(Sonica(library, engines))
+    start_server(Sonica(library, engines), port)
 
 typer.run(main)
