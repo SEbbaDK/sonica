@@ -11,7 +11,8 @@ mkDerivation rec {
 		
 		# Loading from youtube
 		youtube-dl
-		youtube-search
+		#youtube-search
+		ytmusicapi setuptools # the package isn't set up properly
 		# Loading from deezer
 		deemix
 		# Reading and writing tags
