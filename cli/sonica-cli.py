@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from typing import List
+
 import grpc
 import typer
 
@@ -33,8 +35,8 @@ def skip():
         print(ansi(31, r.reason))
 
 @cli.command()
-def search(query : str, engines : str = ''):
-    q = [query] # The daemon asks for a list of queries
+def search(query : List[str], engines : str = ''):
+    q = [' '.join(query)] # The daemon asks for a list of queries
     e = engines.split(',') if engines != '' else []
     r = daemon.Search(Search.Query( query = q, engines = e))
 
