@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from engine import Engine, SongChoice
 
 class LibraryEngine(Engine):
@@ -7,9 +8,9 @@ class LibraryEngine(Engine):
     def __init__(self, library, options):
         self.library = library
 
+    @dataclass
     class LibrarySongChoice(SongChoice):
-        def __init__(self, song):
-            self.song = song
+        song : None
 
         def choose(self):
             return self.song.path
