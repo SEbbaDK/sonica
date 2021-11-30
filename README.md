@@ -1,4 +1,4 @@
-![Sonica](./banner.png)
+![Sonica](./media/banner.png)
 
 # Sonica - Central Music Player and Organizer
 Sonica is a collection of software, that shares many similarities with the wonderful [mpd](https://github.com/MusicPlayerDaemon/MPD) and [mopidy](https://github.com/mopidy/mopidy). Sonica is also built up around a central daemon, but unlike the mpd architecture, does not assume that music is only located in one place or available through many platforms.

@@ -1,35 +1,11 @@
-{ pkgs ? import <nixpkgs> {}
-, grpc-tools ? pkgs.grpc-tools
-, callPackage ? pkgs.callPackage
-}:
+{ pkgs ? import <nixpkgs> {} }:
 let
-	grpc = callPackage ./grpc/shell.nix {};
+	sonica = import ./default.nix { inherit pkgs; };
 in
-pkgs.mkShell rec {
+pkgs.mkShell {
     name = "sonica-shell";
 
-	pythonPackages = [
-		"typer"
-		"grpcio"
-		"grpcio-tools"
-	];
-
-	crystal-grpc = callPackage ./nix/crystal-grpc.nix {};
-	crystal-protobuf = callPackage ./nix/crystal-protobuf.nix {};
-
     buildInputs = [
-
-		grpc-tools
-
-        crystal-grpc
-        crystal-protobuf
-
-		(pkgs.python39.withPackages (pypkgs:
-			map (p: pypkgs.${p}) pythonPackages
-		))
-
+		sonica.prepare
     ];
-
-	PROTOC_GEN_CRYSTAL = "${crystal-protobuf}/bin/protoc-gen-crystal";
-	PROTOC_GEN_GRPC = "${crystal-grpc}/bin/grpc_crystal";
 }
