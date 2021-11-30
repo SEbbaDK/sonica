@@ -5,45 +5,40 @@ import websockets
 from typing import Dict, List
 import sys
 import json
+import grpc
 
 from sonica_pb2_grpc import SonicaStub
 from validate import validate
 # from sonica_pb2 import
 
-
-api_methods = {}
-
-
-def api_method(name: str, scheme = None):
-    def decor(method_func):
-        global api_methods
-
-        def wrapper(socket, value):
-            return method_func(socket, validate(scheme, value))
-
-        api_methods[name] = wrapper
-        return wrapper
-    return decor
+from methods import api_methods, api_method
 
 
 @api_method("test", {"hej": int, "lol": [str]})
-def test(socket, value):
+def test(sonica, socket, value):
     print("got test message", value)
 
 
-async def echo(websocket, hello):
-    print(hello)
-    async for message in websocket:
-        message = json.loads(message)
-        message = validate({"method": str, "value": None}, message)
-        print("hej", message, type(message))
-        method = api_methods[message["method"]]
-        method(websocket, message["value"])
+async def main(sonica):
+    print("Ready")
 
+    async def echo(websocket, hello):
+        print("Got connection")
+        async for message in websocket:
+            message = json.loads(message)
+            message = validate({"method": str, "value": None}, message)
+            method = api_methods[message["method"]]
+            name, resp = method(sonica, websocket, message["value"])
+            await websocket.send(json.dumps({
+                "type": name,
+                "value": resp
+            }))
 
-async def main():
     async with websockets.serve(echo, "localhost", 8765):
         await asyncio.Future()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    channel = grpc.insecure_channel("localhost:7700")
+
+    stub = SonicaStub(channel)
+    asyncio.run(main(stub))
