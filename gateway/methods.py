@@ -7,6 +7,11 @@ import sonica_pb2 as pb2
 api_methods = {}
 
 
+class ApiException(Exception):
+    def serial(self):
+        return str(self)
+
+
 def api_method(name: str, scheme = None):
     def decor(method_func):
         global api_methods
@@ -41,19 +46,19 @@ def dict_from_song(song: pb2.Song):
     ])
 
 
-@api_method("status", {"queue_max": int, "autoplay_max": int})
+@api_method("Status", {"queue_max": int, "autoplay_max": int})
 def status(sonica, socket, value):
     resp = sonica.Status(pb2.Status.Query(**value))
-    return "status/info", dict_from_msg(resp, [
+    return "Status.Info", dict_from_msg(resp, [
         ("current", dict_from_song),
         (["length", "progress", "queue_length", "queue_hash"], None),
         (["queue", "autoplay"], lambda x: [dict_from_song(s) for s in x])
     ])
 
 
-@api_method("engines", {})
+@api_method("Engines", {})
 def engines(sonica, socket, value):
     resp = sonica.Engines(pb2.Empty())
-    return "enginelist", dict_from_msg(resp, [
+    return "Enginelist", dict_from_msg(resp, [
         ("engines", lambda x: [e for e in x])
     ])

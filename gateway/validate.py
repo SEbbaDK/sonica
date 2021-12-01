@@ -2,15 +2,25 @@ from dataclasses import dataclass
 import typing
 
 
+class ValidationException(Exception):
+    pass
+
+
 @dataclass
-class NonMatchingTypeException(Exception):
+class NonMatchingTypeException(ValidationException):
     expected: "typing.Any"
     got: "typing.Any"
 
+    def __str__(self):
+        return f"unexpected element type '{self.got}', expected '{self.expected}'"
+
 
 @dataclass
-class MissingElementException(Exception):
+class MissingElementException(ValidationException):
     elem: str
+
+    def __str__(self):
+        return f"element '{self.elem}' missing"
 
 
 def validate(scheme, thing):
@@ -18,8 +28,11 @@ def validate(scheme, thing):
         return thing
     if type(scheme) is dict:
         if type(thing) is dict:
-            return {key: validate(scheme[key], e)
-                    for key, e in thing.items()}
+            try:
+                return {key: validate(t, thing[key])
+                        for key, t in scheme.items()}
+            except KeyError as e:
+                raise MissingElementException(e.args[0])
             pass
         else:
             raise NonMatchingTypeException(dict, type(thing))
