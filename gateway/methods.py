@@ -50,3 +50,10 @@ def status(sonica, socket, value):
         (["queue", "autoplay"], lambda x: [dict_from_song(s) for s in x])
     ])
 
+
+@api_method("engines", {})
+def engines(sonica, socket, value):
+    resp = sonica.Engines(pb2.Empty())
+    return "enginelist", dict_from_msg(resp, [
+        ("engines", lambda x: [e for e in x])
+    ])
