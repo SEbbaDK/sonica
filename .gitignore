@@ -16,4 +16,4 @@ sonica_services.pb.cr
 /shard.yml
 
 # nix-build file
-result
+result*

@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}
+{ pkgs ? import ../nixpkgs.nix {}
 , mkDerivation ? pkgs.stdenv.mkDerivation
 , fetchFromGitHub ? pkgs.fetchFromGitHub
 , crystal ? pkgs.crystal

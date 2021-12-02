@@ -1,11 +1,15 @@
-{ pkgs ? import <nixpkgs> {} }:
+{ pkgs ? import ./nixpkgs.nix {} }:
 let
 	sonica = import ./default.nix { inherit pkgs; };
 in
 pkgs.mkShell {
     name = "sonica-shell";
 
-    buildInputs = [
-		sonica.prepare
+    nativeBuildInputs = [
+    	sonica.daemon
+    	sonica.prepare
+
+    	sonica.cli
+    	sonica.discord
     ];
 }

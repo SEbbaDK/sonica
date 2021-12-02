@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}
+{ pkgs ? import ../nixpkgs.nix {}
 , grpc-tools ? pkgs.grpc-tools
 , callPackage ? pkgs.callPackage
 }:
