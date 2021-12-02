@@ -17,11 +17,13 @@ class DeezerEngine(Engine):
             raise Exception('No arl given to deezer engine, but required to function')
         self.dz = Deezer()
         self.dz.login_via_arl(options['arl'])
+        self.library = library
 
     @dataclass
-    class DeezSongChoice(SongChoice):
+    class DeezerSongChoice(SongChoice):
         dz: Deezer
         link: str
+        dir: str
 
         def choose(self):
             downloader = deemix.generateDownloadObject(
@@ -31,7 +33,7 @@ class DeezerEngine(Engine):
             )
             self.dl = Downloader(self.dz, downloader, {
                 **deemix.settings.DEFAULTS,
-                'downloadLocation': './music',
+                'downloadLocation': self.dir,
             }, listener = self).start()
             return self.path
 
@@ -48,11 +50,12 @@ class DeezerEngine(Engine):
         results = self.dz.api.search(query)['data']
         #print(results[0:9])
         res_list = [
-            self.DeezSongChoice(
+            self.DeezerSongChoice(
                 title = x['title'],
                 artist = x['artist']['name'],
                 dz = self.dz,
-                link = x['link']
+                link = x['link'],
+                dir = self.library.path()
             )
             for x in results[0:9]
         ]
@@ -71,7 +74,7 @@ class DeezerEngine(Engine):
         except DataException:
             return []
 
-        return [self.DeezSongChoice(
+        return [self.DeezerSongChoice(
             title = result['title'],
             artist = result['artist']['name'],
             dz = self.dz,

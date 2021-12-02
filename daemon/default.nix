@@ -12,7 +12,8 @@ mkDerivation rec {
 		typer
 		
 		# Loading from youtube
-		youtube-dl
+		yt-dlp
+		requests
 		#youtube-search
 		ytmusicapi setuptools # the package isn't set up properly
 		# Loading from deezer
@@ -42,9 +43,10 @@ mkDerivation rec {
 	'';
 	
 	installPhase = ''
-		mkdir -p $out/bin
-		cp -r ./ $out/lib
+		mkdir -p $out/lib
+		cp -r *.py engines $out/lib/
 
+		mkdir -p $out/bin
 		bin=$out/bin/sonicad
 		echo -e "#!/bin/sh\n${pythonWithPackages}/bin/python $out/lib/sonica-daemon.py \$@" > $bin
 		chmod +x $bin

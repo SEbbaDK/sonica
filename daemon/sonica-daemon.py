@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor
 from random import randint
 import sys
 import os
-import pathlib
 from typing import List
 
 import grpc
@@ -16,6 +15,10 @@ from sonica_pb2_grpc import SonicaServicer, add_SonicaServicer_to_server
 import song
 from library import Library
 from playlist import Playlist
+
+# Imported so engines can access them
+import engine
+import tagger
 
 def randint64():
     return randint(-9223372036854775808, 9223372036854775807)
@@ -133,7 +136,9 @@ class Sonica(SonicaServicer):
         if not id in self.choices:
             return Result(success = False, reason = 'Not a valid possibilityid')
 
-        filename = self.choices[id].choose()
+        c = self.choices[id]
+        print(f"Choosing {c.title} by {c.artist}")
+        filename = c.choose()
         self.playlist.enqueue_file(filename, request.add_to_top)
         return Result(success = True, reason = '')
 
@@ -192,30 +197,46 @@ def opts_to_map(opts: List[str]):
         m[engine][name] = v
     return m
 
+def load_engines(dirs : List[str], opts, library):
+    engines = []
+    paths = [ os.path.abspath(os.path.expanduser(d)) for d in dirs ]
+    for path in paths:
+        if not os.path.exists(path):
+            continue
+
+        sys.path.insert(1, str(path))
+
+        for item in os.listdir(path):
+            if ".py" in item and item != "engine.py":
+
+                # Name generation
+                lib = item.replace(".py", "") # test_engine.py => test_engine
+                name = lib.replace("_engine", "") # test_engine => test
+                eclass = lib.title().replace("_", "") # test_engine => TestEngine
+                print(f"Loading {eclass} from {item}")
+
+                # Loading the engine
+                eopts = opts[name] if name in opts else {}
+                e = getattr(__import__(lib), eclass)(library, eopts)
+                engines.append(e)
+
+    return engines
+
+
 def main(
-		port : int = 7700,
-    	music_dir : str = 'music',
-    	engines_dir : str = 'engines',
-    	engine_opt : List[str] = []
+        port : int = 7700,
+        music_dir : str = 'music',
+        engines_dir : List[str] = ['engines', '~/.config/sonicad/plugins'],
+        engine_opt : List[str] = typer.Option([], "--engine-opt", "-o", help="Additional options to parse on to an engine ie. engine:option=value")
     ):
+    if not os.path.exists(music_dir):
+        print(f"Given music dir does not exist: »{music_dir}«", file=sys.stderr)
+        exit(1)
     library = Library(music_dir)
     print(f"Library contains {library.size()} songs")
 
     engine_opts = opts_to_map(engine_opt)
-
-    engines = []
-    path = pathlib.Path(engines_dir).absolute()
-    sys.path.insert(1, str(path))
-
-    for item in os.listdir(path):
-        if ".py" in item and item != "engine.py":
-            lib = item.replace(".py", "") # test_engine.py => test_engine
-            name = lib.replace("_engine", "") # test_engine => test
-            eclass = lib.title().replace("_", "") # test_engine => TestEngine
-            print(f"Loading {eclass} from {item}")
-            opts = engine_opts[name] if name in engine_opts else {}
-            e = getattr(__import__(lib), eclass)(library, opts)
-            engines.append(e)
+    engines = load_engines(engines_dir, engine_opts, library)
 
     start_server(Sonica(library, engines), port)
 
