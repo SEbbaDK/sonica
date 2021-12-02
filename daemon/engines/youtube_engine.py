@@ -1,101 +1,66 @@
 from engine import Engine, SongChoice
 import tagger
+from youtube_music_engine import ydownload
 
 from dataclasses import dataclass
 import tempfile
 import re
 
-from yt_dlp import YoutubeDL
-#from youtube_search import YoutubeSearch
-from ytmusicapi import YTMusic
+from youtube_search import YoutubeSearch
 import requests
 
-#hyphens = '\u002D\u058A\u05BE\u1400\u1806\u2010\u2011\u2012\u2013\u2014\u2015\u2E3A\u2E3B\uFE58\uFE63\uFF0D'
-#splitter = re.compile(f'\s+[{hyphens}]\s+')
-
 class YoutubeEngine(Engine):
-    name = "Youtube"
-    description = "Plays from youtube"
+    name = "YouTube"
+    description = "Plays from YouTube (Only use this for music not licensed via youtube music)"
+    # YouTube has really flaky tagging
+    # and downloads can take quite a while
+    rank = 2
 
     def __init__(self, library, options):
-        self.ytapi = YTMusic()
         self.library = library
 
     @dataclass
     class YoutubeSongChoice(SongChoice):
-        art : str
+        thumbnail : str
         video : str
         dir : str
 
-        def filename(self, extension = "mp3"):
-            return self.dir + f'{self.artist} - {self.title}.{extension}'
-
         def choose(self):
-            ytdl = YoutubeDL({
-                'format': 'bestaudio/best',
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '320',
-                }],
-                'progress_hooks': [ lambda h: self.hook(h) ],
-                'paths': { 'temp': tempfile.gettempdir(), },
-                'outtmpl': { 'default': self.filename("%(ext)s") },
-            })
-            rv = ytdl.download([ self.video ])
-            print(f'Getting thumbnail')
-            r = requests.get(self.art)
-            print(f'Tagging {self.filename()}')
-            f = tagger.TaggedFile(self.filename())
-            f.set_title(self.title)
-            f.set_artist(self.artist)
-            f.set_art(r.headers['Content-Type'], r.content), 
-            f.save()
-            return self.filename()
-
-        def hook(self, h):
-            if h['status'] == 'finished':
-                self.path = h['filename']
+            return ydownload(
+                url = self.video,
+                title = self.title,
+                artist = self.artist,
+                dir = self.dir,
+                thumbnail = self.thumbnail,
+            )
 
     def search(self, query : str):
-        results = self.ytapi.search(query, limit = 100)
-        results = [
-            r for r in results
-            if r['resultType'] in ['song', 'video']
-        ]
+        results = YoutubeSearch(query, max_results = 20)
 
-        #print([ (r['resultType'], 'videoId' in r) for r in results ])
+        hyphens = '\u002D\u058A\u05BE\u1400\u1806\u2010\u2011\u2012\u2013\u2014\u2015\u2E3A\u2E3B\uFE58\uFE63\uFF0D'
+        splitter = re.compile(f'\s+([{hyphens}|/:]|//)\s+')
+
+        options = []
+        for v in results.videos:
+            s = splitter.split(v['title'], maxsplit = 1)
+            if len(s) == 1:
+                options.append((
+                	v['title'],
+                	v['channel'].replace('Vevo', '').replace(' - Topic', ''),
+                	v
+            	))
+            elif len(s) == 2:
+                options.append((s[0], s[1], v))
+                options.append((s[1], s[0], v))
 
         return [
             self.YoutubeSongChoice(
-                title = r['title'],
-                artist = r['artists'][0]['name'],
-                art = sorted(r['thumbnails'], key = lambda t: t['width'])[0]['url'],
-                video = r['videoId'],
+                title = title,
+                artist = artist,
+                thumbnail = v['thumbnails'][-1],
+                video = v['id'],
                 dir = self.library.path(),
             )
-            for r in results
+            for title, artist, v in options[0:20]
         ]
-
-#    def search(self, query: str):
-#        results = YoutubeSearch(query).videos
-#        splitresults = [
-#           self.splitter.split(v['title'], 1)
-#           for v in results
-#           if ' - ' in v['title']
-#       ]
-#
-#        return [
-#           SongChoice(
-#               title = t,
-#               artist = a,
-#           )
-#           for a, t in splitresults[0:10]
-#        ] + [
-#            SongChoice(
-#               title = x['title'],
-#               artist = x['channel'],
-#           )
-#            for x in results[0:10]
-#        ]
 

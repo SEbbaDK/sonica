@@ -236,7 +236,11 @@ def main(
     print(f"Library contains {library.size()} songs")
 
     engine_opts = opts_to_map(engine_opt)
-    engines = load_engines(engines_dir, engine_opts, library)
+    engines = sorted(
+    	load_engines(engines_dir, engine_opts, library),
+    	key = lambda e: e.rank,
+    	reverse = True,
+    )
 
     start_server(Sonica(library, engines), port)
 

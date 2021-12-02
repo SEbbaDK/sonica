@@ -4,6 +4,8 @@ from engine import Engine, SongChoice
 class LibraryEngine(Engine):
     name = "Library"
     description = "Plays from the downloaded songs"
+    # The library is instantaneous, so it should rank first
+    rank = 10
 
     def __init__(self, library, options):
         self.library = library

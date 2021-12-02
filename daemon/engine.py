@@ -15,7 +15,7 @@ class SongChoice:
 class Engine:
     name: str = None
     description: str = None
-    command: str = None
+    rank: int = None
 
     def search(self, query: str):
         pass

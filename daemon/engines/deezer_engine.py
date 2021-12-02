@@ -11,6 +11,8 @@ from deezer.errors import DataException
 class DeezerEngine(Engine):
     name = "Deezer"
     description = "Plays from deezer"
+    # Deezer has high-quality audio and great tagging
+    rank = 8
 
     def __init__(self, library, options):
         if not 'arl' in options:
@@ -48,7 +50,6 @@ class DeezerEngine(Engine):
         if re.search("([a-z]*[.])\w+", url_check):
             return []
         results = self.dz.api.search(query)['data']
-        #print(results[0:9])
         res_list = [
             self.DeezerSongChoice(
                 title = x['title'],
@@ -57,7 +58,7 @@ class DeezerEngine(Engine):
                 link = x['link'],
                 dir = self.library.path()
             )
-            for x in results[0:9]
+            for x in results[0:20]
         ]
         # If there are no search results, try an id-search if the query can
         # be an int.

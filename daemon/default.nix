@@ -14,7 +14,7 @@ mkDerivation rec {
 		# Loading from youtube
 		yt-dlp
 		requests
-		#youtube-search
+		youtube-search
 		ytmusicapi setuptools # the package isn't set up properly
 		# Loading from deezer
 		deemix
