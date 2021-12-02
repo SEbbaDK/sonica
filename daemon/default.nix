@@ -18,7 +18,7 @@ mkDerivation rec {
 		# Loading from deezer
 		deemix
 		# Reading and writing tags
-		pytaglib
+		mutagen
 		# Playing audio
 		pydub
 		simpleaudio

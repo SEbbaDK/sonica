@@ -1,7 +1,6 @@
 import os
 
-import taglib
-
+import tagger
 from song import Song
 
 class Library:
@@ -11,6 +10,9 @@ class Library:
         self.index: list[Song] = []
 
         self.reindex()
+
+    def path(self):
+        return self.base
 
     def reindex(self):
         self.index = []
@@ -33,13 +35,13 @@ class Library:
         return set(sum([ s.tags for s in self.index ], []))
 
     def index_file(self, path):
-        f = taglib.File(path)
+        f = tagger.TaggedFile(path)
         song = Song(
             path,
-            f.tags['TITLE'][0],
-            f.tags['ARTIST'][0],
-            f.tags['ALBUM'][0],
-            f.tags['TAGS'] if 'TAGS' in f.tags else []
+            f.title(),
+            f.artist(),
+            f.album(),
+            f.art(),
         )
         self.index.append(song)
         return song
