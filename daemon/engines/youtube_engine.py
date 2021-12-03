@@ -14,7 +14,7 @@ class YoutubeEngine(Engine):
     description = "Plays from YouTube (Only use this for music not licensed via youtube music)"
     # YouTube has really flaky tagging
     # and downloads can take quite a while
-    rank = 2
+    rank = 4
 
     def __init__(self, library, options):
         self.library = library

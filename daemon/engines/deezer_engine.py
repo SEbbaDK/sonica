@@ -12,7 +12,7 @@ class DeezerEngine(Engine):
     name = "Deezer"
     description = "Plays from deezer"
     # Deezer has high-quality audio and great tagging
-    rank = 8
+    rank = 2
 
     def __init__(self, library, options):
         if not 'arl' in options:

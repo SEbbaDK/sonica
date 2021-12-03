@@ -45,7 +45,7 @@ class YoutubeMusicEngine(Engine):
     description = "Plays from YouTube via YouTube Music"
     # YouTube Music has decent but limited tagging
     # and downloads can take quite a while
-    rank = 4
+    rank = 3
 
     def __init__(self, library, options):
         self.ytapi = YTMusic()

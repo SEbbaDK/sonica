@@ -239,7 +239,6 @@ def main(
     engines = sorted(
     	load_engines(engines_dir, engine_opts, library),
     	key = lambda e: e.rank,
-    	reverse = True,
     )
 
     start_server(Sonica(library, engines), port)
