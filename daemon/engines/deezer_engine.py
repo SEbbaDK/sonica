@@ -62,17 +62,18 @@ class DeezerEngine(Engine):
         ]
         # If there are no search results, try an id-search if the query can
         # be an int.
-        if not res_list and int(query):
-            res_list = self.search_id(int(query))
+        if len(res_list) == 0:
+            res_list = self.search_id(query)
 
         return res_list
 
-    def search_id(self, id_query: int):
+    def search_id(self, id_query : str):
         # Just because the query is int()-able, doesn't mean it's actually
         # a deezer track id. In case it's not, we don't return any results.
         try:
-            result = self.dz.api.get_track(id_query)
-        except DataException:
+            id = int(id_query)
+            result = self.dz.api.get_track(id)
+        except:
             return []
 
         return [self.DeezerSongChoice(
