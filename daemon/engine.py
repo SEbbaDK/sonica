@@ -15,6 +15,10 @@ class SongChoice:
 class Engine:
     name: str = None
     description: str = None
+    # The rank should be determined by considering:
+    # - speed
+    # - tag quality
+    # - audio quality
     rank: int = None
 
     def search(self, query: str):
