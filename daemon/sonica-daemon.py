@@ -4,7 +4,6 @@ from concurrent.futures import ThreadPoolExecutor
 from random import randint
 import sys
 import os
-from typing import List
 
 import grpc
 import typer
@@ -187,7 +186,7 @@ def start_server(sonica, port):
     print(f'Server started on {location}')
     server.wait_for_termination()
 
-def opts_to_map(opts: List[str]):
+def opts_to_map(opts: list[str]):
     m = {}
     for s in opts:
         k, v = s.split("=")
@@ -197,7 +196,7 @@ def opts_to_map(opts: List[str]):
         m[engine][name] = v
     return m
 
-def load_engines(dirs : List[str], opts, library):
+def load_engines(dirs : list[str], opts, library):
     engines = []
     paths = [ os.path.abspath(os.path.expanduser(d)) for d in dirs ]
     for path in paths:
@@ -226,8 +225,8 @@ def load_engines(dirs : List[str], opts, library):
 def main(
         port : int = 7700,
         music_dir : str = 'music',
-        engines_dir : List[str] = ['engines', '~/.config/sonicad/plugins'],
-        engine_opt : List[str] = typer.Option([], "--engine-opt", "-o", help="Additional options to parse on to an engine ie. engine:option=value")
+        engines_dir : list[str] = ['engines', '~/.config/sonicad/plugins'],
+        engine_opt : list[str] = typer.Option([], "--engine-opt", "-o", help="Additional options to parse on to an engine ie. engine:option=value")
     ):
     if not os.path.exists(music_dir):
         print(f"Given music dir does not exist: »{music_dir}«", file=sys.stderr)
