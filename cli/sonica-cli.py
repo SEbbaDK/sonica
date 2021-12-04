@@ -8,11 +8,18 @@ import typer
 from sonica_pb2_grpc import SonicaStub
 from sonica_pb2 import Empty, Search, Status
 
+clean_output = False
 def ansi(code, text):
-    return f'\x00\x1B[{code}m{text}\x00\x1B[m'
+    if clean_output:
+        return text
+    else:
+        return f'\x00\x1B[{code}m{text}\x00\x1B[m'
 
 def songformat(song):
     return f'{ansi(1, song.title)} - {ansi(3, song.artist)}'
+
+def timeformat(time : int):
+    return str(time // 60) + ":" + str(time % 60).zfill(2)
 
 cli = typer.Typer()
 
@@ -73,8 +80,8 @@ def search(query : List[str], engines : str = ''):
             chosen_id, chosen_song = map[selection]
             r = daemon.Choose(Search.Choice(possibility_id = chosen_id, add_to_top = next))
             if r.success:
-            	print(f'Queued: {songformat(chosen_song)}')
-            	exit(0)
+                print(f'Queued: {songformat(chosen_song)}')
+                exit(0)
             else:
                 print(ansi(31, f'Addition failed: »{r.reason}«'))
                 exit(1)
@@ -87,13 +94,26 @@ def engines():
     print(' '.join(r.engines))
 
 @cli.command()
-def status(queue_max : int = -1, autoplay_max : int = 10):
+def status(
+        queue_max : int = -1,
+        autoplay_max : int = 10,
+        oneline : bool = False,
+        percent : bool = False,
+        ):
     r = daemon.Status(Status.Query( queue_max = queue_max, autoplay_max = autoplay_max ))
     if r.current.title == '' and r.current.artist == '':
         print('Not playing anything')
     else:
-        print(f'Currently playing {songformat(r.current)}')
+        if percent:
+            time = str(int((r.progress / r.length) * 100)) + "%"
+        else:
+            time = f'{timeformat(r.progress)}/{timeformat(r.length)}'
 
+        print(f'[{time}] {songformat(r.current)}')
+
+    if oneline:
+        return
+    
     counter = 0
     print('\n' + ansi(1, 'Queue'))
     for s in r.queue:
@@ -106,10 +126,11 @@ def status(queue_max : int = -1, autoplay_max : int = 10):
         print(f'{str(counter).rjust(3)}: {songformat(s)}')
 
 @cli.callback()
-def callback(host: str = 'localhost', port: int = 7700):
-    global daemon
+def callback(host: str = 'localhost', port: int = 7700, clean: bool = False):
+    global daemon, clean_output
     connection = f'{host}:{port}'
     channel = grpc.insecure_channel(connection)
     daemon = SonicaStub(channel)
+    clean_output = clean
 
 cli()
