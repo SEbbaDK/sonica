@@ -48,7 +48,6 @@ class YoutubeMusicEngine(Engine):
     rank = 3
 
     def __init__(self, library, options):
-        self.ytapi = YTMusic()
         self.library = library
 
     @dataclass
@@ -67,7 +66,7 @@ class YoutubeMusicEngine(Engine):
             )
 
     def search(self, query : str):
-        results = self.ytapi.search(query, limit = 100)
+        results = YTMusic().search(query, limit = 100)
         results = [
             r for r in results
             if r['resultType'] in ['song', 'video']

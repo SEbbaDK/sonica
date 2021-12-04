@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 from random import randint
 import sys
 import os
+import multiprocessing
 
 import grpc
 import typer
@@ -31,6 +32,11 @@ def songify(song):
             artist = song.artist,
             album = song.album,
         )
+
+def engine_search(t):
+    engine, query = t
+    results = engine.search(query)
+    return (engine.name, results)
 
 class Sonica(SonicaServicer):
     def __init__(self, library, engines):
@@ -112,23 +118,25 @@ class Sonica(SonicaServicer):
         # This should change when engines actually differentiate strings for repeated search
         querystring = ' '.join(request.query)
 
-        results = []
-        for e in self.engines:
-            search = e.search(querystring)
-            map = {}
+        pool = multiprocessing.Pool()
+        searches = pool.map(engine_search, [ (e, querystring) for e in self.engines ])
 
-            for r in search:
+        def search_to_results(search):
+            engine_name, results = search
+            map = {}
+            for r in results:
                 id = randint64()
                 self.choices[id] = r
                 map[id] = Song( title = r.title, artist = r.artist, album = '')
 
-            engine_result = Search.Result.EngineResult(
-                name = e.name,
+            return Search.Result.EngineResult(
+                name = engine_name,
                 possibilities = map,
             )
-            results.append(engine_result)
 
-        return Search.Result(results = results)
+        engine_results = map(search_to_results, searches)
+
+        return Search.Result(results = engine_results)
 
     def Choose(self, request, context):
         id = request.possibility_id
