@@ -37,11 +37,12 @@ class Library:
     def index_file(self, path):
         f = tagger.TaggedFile(path)
         song = Song(
-            path,
-            f.title(),
-            f.artist(),
-            f.album(),
-            f.art(),
+            path = path,
+            title = f.title(),
+            artist = f.artist(),
+            album = f.album(),
+            art = f.art(),
+			length = f.length()
         )
         self.index.append(song)
         return song
