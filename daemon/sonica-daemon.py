@@ -2,6 +2,8 @@
 
 from concurrent.futures import ThreadPoolExecutor
 from random import randint
+import sys
+import os
 
 import grpc
 import typer
@@ -12,7 +14,10 @@ from sonica_pb2_grpc import SonicaServicer, add_SonicaServicer_to_server
 import song
 from library import Library
 from playlist import Playlist
-from players import LibraryPlayer, DeezPlayer
+
+# Imported so engines can access them
+import engine
+import tagger
 
 def randint64():
     return randint(-9223372036854775808, 9223372036854775807)
@@ -28,10 +33,10 @@ def songify(song):
         )
 
 class Sonica(SonicaServicer):
-    def __init__(self, library, players):
+    def __init__(self, library, engines):
         self.library = library
         self.playlist = Playlist(library)
-        self.players = players
+        self.engines = engines
         self.choices = {}
 
     # Playback commands
@@ -104,12 +109,12 @@ class Sonica(SonicaServicer):
     # Adding commands
 
     def Search(self, request, context):
-        # This should change when players actually differentiate strings for repeated search
+        # This should change when engines actually differentiate strings for repeated search
         querystring = ' '.join(request.query)
 
         results = []
-        for p in self.players:
-            search = p.search(querystring)
+        for e in self.engines:
+            search = e.search(querystring)
             map = {}
 
             for r in search:
@@ -118,7 +123,7 @@ class Sonica(SonicaServicer):
                 map[id] = Song( title = r.title, artist = r.artist, album = '')
 
             engine_result = Search.Result.EngineResult(
-                name = p.name,
+                name = e.name,
                 possibilities = map,
             )
             results.append(engine_result)
@@ -130,7 +135,9 @@ class Sonica(SonicaServicer):
         if not id in self.choices:
             return Result(success = False, reason = 'Not a valid possibilityid')
 
-        filename = self.choices[id].choose()
+        c = self.choices[id]
+        print(f"Choosing {c.title} by {c.artist}")
+        filename = c.choose()
         self.playlist.enqueue_file(filename, request.add_to_top)
         return Result(success = True, reason = '')
 
@@ -138,7 +145,7 @@ class Sonica(SonicaServicer):
     # Info commands
 
     def Engines(self, request, context):
-        return EngineList(engines = [ e.name for e in self.players ])
+        return EngineList(engines = [ e.name for e in self.engines ])
 
     def Status(self, request, context):
         queue = [ songify(s) for s in self.playlist.queue ]
@@ -169,27 +176,70 @@ class Sonica(SonicaServicer):
         )
 
 
-
-def start_server(sonica):
+def start_server(sonica, port):
     server = grpc.server(ThreadPoolExecutor(max_workers = 4))
     add_SonicaServicer_to_server(sonica, server)
 
-    location = 'localhost:7700'
+    location = f'localhost:{port}'
     server.add_insecure_port(location)
     server.start()
     print(f'Server started on {location}')
     server.wait_for_termination()
 
-def main(deez_arl : str = None, dir : str = 'music'):
-    library = Library(dir)
+def opts_to_map(opts: list[str]):
+    m = {}
+    for s in opts:
+        k, v = s.split("=")
+        engine, name = k.split(":")
+        if not engine in m:
+            m[engine] = {}
+        m[engine][name] = v
+    return m
+
+def load_engines(dirs : list[str], opts, library):
+    engines = []
+    paths = [ os.path.abspath(os.path.expanduser(d)) for d in dirs ]
+    for path in paths:
+        if not os.path.exists(path):
+            continue
+
+        sys.path.insert(1, str(path))
+
+        for item in os.listdir(path):
+            if ".py" in item and item != "engine.py":
+
+                # Name generation
+                lib = item.replace(".py", "") # test_engine.py => test_engine
+                name = lib.replace("_engine", "") # test_engine => test
+                eclass = lib.title().replace("_", "") # test_engine => TestEngine
+                print(f"Loading {eclass} from {item}")
+
+                # Loading the engine
+                eopts = opts[name] if name in opts else {}
+                e = getattr(__import__(lib), eclass)(library, eopts)
+                engines.append(e)
+
+    return engines
+
+
+def main(
+        port : int = 7700,
+        music_dir : str = 'music',
+        engines_dir : list[str] = ['engines', '~/.config/sonicad/plugins'],
+        engine_opt : list[str] = typer.Option([], "--engine-opt", "-o", help="Additional options to parse on to an engine ie. engine:option=value")
+    ):
+    if not os.path.exists(music_dir):
+        print(f"Given music dir does not exist: »{music_dir}«", file=sys.stderr)
+        exit(1)
+    library = Library(music_dir)
     print(f"Library contains {library.size()} songs")
 
-    players = []
-    players.append( LibraryPlayer(library) )
-    #players.append( YoutubePlayer() )
-    if deez_arl:
-        players.append( DeezPlayer(deez_arl) )
+    engine_opts = opts_to_map(engine_opt)
+    engines = sorted(
+    	load_engines(engines_dir, engine_opts, library),
+    	key = lambda e: e.rank,
+    )
 
-    start_server(Sonica(library, players))
+    start_server(Sonica(library, engines), port)
 
 typer.run(main)

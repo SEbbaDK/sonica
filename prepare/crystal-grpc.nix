@@ -1,4 +1,4 @@
-{ pkgs ? import <nixpkgs> {}
+{ pkgs ? import ../nixpkgs.nix {}
 , fetchFromGitHub ? pkgs.fetchFromGitHub
 , crystal ? pkgs.crystal
 }:

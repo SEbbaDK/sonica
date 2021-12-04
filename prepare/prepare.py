@@ -20,7 +20,7 @@ def create_generator(language: str):
         run_command(' '.join([
             f'protoc',
             f'--{language}_out={dir}',
-            f'sonica.proto',
+            options["protofile"],
         ]))
     return generator
 
@@ -30,11 +30,11 @@ def generate_grpc_python(dir: str):
     Generates the python protobuf spec and grpc clients/server from the sonica service spec.
     """
     run_command(' '.join([
-        f'python -m grpc_tools.protoc',
-        f'-I ./',
+        f'{options["python"]} -m grpc_tools.protoc',
+        f'-I {options["protopath"]}',
         f'--python_out="{dir}"',
         f'--grpc_python_out="{dir}"',
-        f'sonica.proto',
+        options["protofile"],
     ]))
 
 @program.command()
@@ -49,7 +49,7 @@ def generate_grpc_crystal(dir: str):
         f'--crystal_out={dir}',
         f'--plugin=protoc-gen-grpc={options["protoc_gen_grpc"]}',
         f'--plugin=protoc-gen-crystal={options["protoc_gen_crystal"]}',
-        f'sonica.proto',
+        options["protofile"],
     ]))
 
 @program.command()
@@ -75,7 +75,10 @@ def error(text: str):
 @program.callback()
 def callback(
         protoc_gen_grpc: str = typer.Option("", envvar="PROTOC_GEN_GRPC"),
-        protoc_gen_crystal: str = typer.Option("", envvar="PROTOC_GEN_CRYSTAL")
+        protoc_gen_crystal: str = typer.Option("", envvar="PROTOC_GEN_CRYSTAL"),
+        protofile: str = typer.Option("sonica.proto", envvar="PREPARE_PROTOFILE"),
+        protopath: str = typer.Option(None, envvar="PREPARE_PROTOPATH"),
+        python: str = typer.Option("python", envvar="PREPARE_PYTHON")
     ):
     crystal_url = "Check https://github.com/jgaskins/grpc for info on how to get the binaries";
 
@@ -88,6 +91,13 @@ def callback(
         error("PROTOC_GEN_GRPC needs to be given as an option or be in the environment\n" + crystal_url)
     else:
         options["protoc_gen_grpc"] = protoc_gen_grpc
+
+    options["protofile"] = protofile
+    if protopath is None:
+        options["protopath"] = os.path.abspath(os.path.dirname(protofile))
+    else:
+        options["protopath"] = protopath
+    options["python"] = python
 
 for lang in ['cpp', 'csharp', 'java', 'js', 'objc', 'php', 'ruby']:
     name = f'generate-grpc-{lang}'
