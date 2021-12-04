@@ -158,8 +158,9 @@ class Sonica(SonicaServicer):
 
         return Status.Info(
             current = songify(self.playlist.current),
-            length = 1, # TODO: This should actually do something
-            progress = 0,
+            length = int(self.playlist.current.length)
+                if self.playlist.current != None else 0,
+            progress = int(self.playlist.progress()),
 
             # Note these work on the full list
             queue_length = len(self.playlist.queue),
@@ -236,8 +237,8 @@ def main(
 
     engine_opts = opts_to_map(engine_opt)
     engines = sorted(
-    	load_engines(engines_dir, engine_opts, library),
-    	key = lambda e: e.rank,
+        load_engines(engines_dir, engine_opts, library),
+        key = lambda e: e.rank,
     )
 
     start_server(Sonica(library, engines), port)

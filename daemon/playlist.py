@@ -130,3 +130,9 @@ class Playlist:
 
     def queue_hash(self):
         return hash(tuple(self.queue))
+
+    def progress(self):
+        if self.play_start == None:
+            return 0
+        else:
+            return time() - self.play_start

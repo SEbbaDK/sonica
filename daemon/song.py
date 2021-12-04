@@ -7,6 +7,7 @@ class Song:
     artist: str
     album: str
     art: (str, bytes)
+    length: float
 
     def __str__(self):
         return f"**{self.title}** by *{self.artist}*"
