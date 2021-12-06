@@ -16,6 +16,7 @@ mkDerivation rec {
 
 	nativeBuildInputs = [
 		pythonWithPackages
+		sonica.python_grpc
 	];
 
 	src = (builtins.filterSource
@@ -28,9 +29,11 @@ mkDerivation rec {
 	dontUnpack = true;
 	dontBuild = true;
 
+	PYTHONPATH = "${sonica.python_grpc}/lib";
+
 	wrapper = pkgs.writeText "wrapper" ''
 #!/bin/sh
-export PYTHONPATH=${sonica.python_grpc}/lib
+export PYTHONPATH=${PYTHONPATH}
 ${pythonWithPackages}/bin/python ..cd /lib/gateway.py $@
 '';
 
