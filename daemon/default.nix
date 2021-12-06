@@ -31,6 +31,7 @@ mkDerivation rec {
 
 	nativeBuildInputs = [
 		pythonWithPackages
+		pkgs.ffmpeg
 	];
 
 	src = ./.;
@@ -48,7 +49,7 @@ mkDerivation rec {
 
 		mkdir -p $out/bin
 		bin=$out/bin/sonicad
-		echo -e "#!/bin/sh\n${pythonWithPackages}/bin/python $out/lib/sonica-daemon.py \$@" > $bin
+		echo -e "#!/bin/sh\nPATH=\"${pkgs.ffmpeg}/bin:\$PATH\"\n${pythonWithPackages}/bin/python $out/lib/sonica-daemon.py \$@" > $bin
 		chmod +x $bin
 	'';
 }
