@@ -31,7 +31,10 @@ mkDerivation rec {
 		cp *.py $out/lib
 
 		mkdir -p $out/bin
-		echo -e "#!/bin/sh\n${pythonWithPackages}/bin/python $out/lib/sonica-cli.py \$@" > $out/bin/sonicac
-		chmod +x $out/bin/sonicac
+		outfile="$out/bin/sonica-cli"
+		echo -e "#!/bin/sh\n${pythonWithPackages}/bin/python $out/lib/sonica-cli.py \$@" > $outfile
+		chmod +x $outfile
+
+		ln -s $outfile $out/bin/sc
 	'';
 }

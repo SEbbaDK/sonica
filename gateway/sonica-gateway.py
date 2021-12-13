@@ -56,21 +56,28 @@ def handle_message(raw_msg, sonica, websocket):
     return response
 
 
-async def main(sonica):
-    print("Ready")
+async def main(sonica, host, port):
+    print(f"Listening for websocket connections on {host}:{port}")
 
     async def echo(websocket, hello):
         print("Got connection")
         async for message in websocket:
-            message = json.loads(message)
-            response = handle_message(message, sonica, websocket)
-            await websocket.send(json.dumps(response))
+            try:
+                message = json.loads(message)
+                response = handle_message(message, sonica, websocket)
+                await websocket.send(json.dumps(response))
+            except:
+                await websocket.send(json.dumps({ "type" : "error", "value" : "Invalid JSON" }))
 
-    async with websockets.serve(echo, "localhost", 8765):
+    async with websockets.serve(echo, host, port):
         await asyncio.Future()
 
 if __name__ == "__main__":
-    channel = grpc.insecure_channel("localhost:7700")
-
+    address = "localhost:7700" 
+    print(f"Connecting to daemon at {address}")
+    channel = grpc.insecure_channel(address)
     stub = SonicaStub(channel)
-    asyncio.run(main(stub))
+
+    host = "localhost"
+    port = 7701
+    asyncio.run(main(stub, host, port))

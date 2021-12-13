@@ -14,39 +14,28 @@ in
 mkDerivation rec {
 	name = "sonica-gateway";
 
-	nativeBuildInputs = [
-		pythonWithPackages
-		sonica.python_grpc
-	];
+	buildInputs = [ sonica.prepare ];
+	nativeBuildInputs = [ pythonWithPackages ];
 
-	src = (builtins.filterSource
-		(path: type: builtins.elem (baseNameOf path) [
-			"gateway.py"
-			"methods.py"
-			"validate.py"
-		])) ./.;
+	src = ./.;
 
 	dontUnpack = true;
-	dontBuild = true;
 
-	PYTHONPATH = "${sonica.python_grpc}/lib";
-
-	wrapper = pkgs.writeText "wrapper" ''
-#!/bin/sh
-export PYTHONPATH=${PYTHONPATH}
-${pythonWithPackages}/bin/python ..cd /lib/gateway.py $@
-'';
+	buildPhase = ''
+		cp $src/*.py ./
+		cp ${../sonica.proto} sonica.proto
+		${sonica.prepare}/bin/sonica-prepare \
+			--protofile sonica.proto \
+			generate-grpc-python ./
+	'';
 
 	installPhase = ''
 		mkdir -p $out/lib
-		cp $src/*.py $out/lib
+		cp *.py $out/lib
 
 		mkdir -p $out/bin
-		cat > $out/bin/sonicagw << END_SCRIPT
-#!/usr/bin/bash
-export PYTHONPATH=${sonica.python_grpc}/lib
-${pythonWithPackages}/bin/python $out/lib/gateway.py $@
-END_SCRIPT
-		chmod +x $out/bin/sonicagw
+		outfile="$out/bin/sonica-gateway"
+		echo -e "#!/bin/sh\n${pythonWithPackages}/bin/python $out/lib/sonica-gateway.py \$@" > $outfile
+		chmod +x $outfile
 	'';
 }
