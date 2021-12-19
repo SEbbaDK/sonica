@@ -2,23 +2,45 @@ module SonicaApi exposing (..)
 
 import Json.Decode as D
 import Json.Encode as E
+import Dict exposing (Dict)
 
-type SonicaMsg token return text = Success token return | Failure token text | Error text
+--type SonicaMsg channel return text
+--    = Success channel return
+--    | Error channel text
+--    | JsonError text
+
+type alias SonicaMapMsg =
+    { msgtype : String
+    , channel : Int
+    , value : Dict String String
+    }
 
 typeDecoder = D.field "type" D.string
-tokenDecoder = D.field "token" D.int
+channelDecoder = D.field "channel" D.int
 valueDecoder = D.field "value" D.string
 
-sonicaMsgDecoder : String -> SonicaMsg Int String String
-sonicaMsgDecoder i =
-    Error (Debug.log "decoded json" i)
---    case (D.decodeString (typeDecoder) i) of
---        Ok "error" -> Error (tokenDecoder i) (valueDecoder i)
---        Ok "return" -> Success (tokenDecoder i) (valueDecoder i)
---        Err -> Error (tokenDecoder
+--sonicaMsgDecoder : String -> SonicaMsg Int String String
+sonicaMsgDecoder =
+    D.map3 SonicaMapMsg
+        (D.at ["type"] D.string)
+        (D.at ["channel"] D.int)
+        (D.at ["value"] (D.dict D.string))
 
-sonicaPlayMsg token = sonicaMsg "Play" "{}" token
-sonicaStopMsg token = sonicaMsg "Stop" "{}" token
+--    case typeDecoder i of
+--        Ok "error" -> Error (channelDecoder i) (valueDecoder i)
+--        Ok "return" -> Success (channelDecoder i) (valueDecoder i)
+--        Err message -> JsonError message
 
-sonicaMsg method value token =
-    "{ \"method\" : \"" ++ method ++ "\", \"value\" : " ++ value ++ ", \"token\" : " ++ String.fromInt token ++ " }"
+decodeMsg = D.decodeString sonicaMsgDecoder
+
+sonicaPlayMsg channel = sonicaMsg "Play" (Dict.empty) channel
+sonicaStopMsg channel = sonicaMsg "Stop" (Dict.empty) channel
+
+sonicaMsg : String -> Dict String String -> Int -> String
+sonicaMsg method value channel =
+    E.encode 0 <| E.object
+        [ ( "type", E.string method )
+        , ( "channel", E.int channel )
+        , ( "value", E.dict identity E.string value )
+        ]
+
