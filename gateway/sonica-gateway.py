@@ -22,10 +22,10 @@ def test(sonica, socket, value):
 
 # TODO, sanitation on the stuff we return here?
 def handle_message(raw_msg, sonica, websocket):
-    error_resp = {"type": "Error", "value": "", "channel": None}
+    error_resp = {"type": "Error", "value": {}, "channel": None}
 
     try:
-        message = validate({"channel": int, "type": str, "value": {}}, raw_msg)
+        message = validate({"channel": int, "type": str, "value": dict}, raw_msg)
 
     except ValidationException as e:
         error_resp["channel"] = raw_msg["channel"]

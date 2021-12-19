@@ -58,9 +58,9 @@ def dict_from_song(song: pb2.Song):
 
 def response_from_result(res: pb2.Result):
     if res.success:
-        return "result", {}
+        return "Return", {}
     else:
-        return "error", { "message" : res.reason }
+        return "Error", { "message" : res.reason }
 
 
 type_hash = {"value": int}
@@ -118,7 +118,7 @@ def remove(sonica, socket, value):
 @api_method("Search", {"query": [str], "engines": [str]})
 def search(sonica, socket, value):
     resp = sonica.Search(pb2.Search.Query(**value))
-    return "Search.Result", dict_from_msg(resp, [
+    return "ReturnSearch", dict_from_msg(resp, [
         ("results", lambda x: [dict_from_msg(res, [
                 ("name", None),
                 ("possibilities", lambda x: {k: dict_from_song(v) for k, v in x.items()}),
@@ -135,7 +135,7 @@ def choose(sonica, socket, value):
 @api_method("Engines", {})
 def engines(sonica, socket, value):
     resp = sonica.Engines(pb2.Empty())
-    return "Return", dict_from_msg(resp, [
+    return "ReturnEngines", dict_from_msg(resp, [
         ("engines", lambda x: [e for e in x])
     ])
 
@@ -143,7 +143,7 @@ def engines(sonica, socket, value):
 @api_method("Status", {"queue_max": int, "autoplay_max": int})
 def status(sonica, socket, value):
     resp = sonica.Status(pb2.Status.Query(**value))
-    return "Return", dict_from_msg(resp, [
+    return "ReturnStatus", dict_from_msg(resp, [
         ("current", dict_from_song),
         (["length", "progress", "queue_length", "queue_hash"], None),
         (["queue", "autoplay"], lambda x: [dict_from_song(s) for s in x])
@@ -153,7 +153,7 @@ def status(sonica, socket, value):
 @api_method("Library", {})
 def library(sonica, socket, value):
     resp = sonica.Library(pb2.Empty())
-    return "Return", dict_from_msg(resp, [
+    return "ReturnLibrary", dict_from_msg(resp, [
         ("size", None),
         ("songs", lambda x: [dict_from_song(s) for s in x]),
     ])
