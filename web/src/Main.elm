@@ -7,7 +7,8 @@ import List exposing (map)
 import Tuple exposing (first, second)
 
 import Element exposing
-    (el, row, column, text, rgb, width, fill, height, padding, spacing, fillPortion, px)
+    (el, row, column, text, paragraph
+    , rgb, width, fill, height, padding, spacing, fillPortion, px)
 import Element.Input as Input
 import Element.Background exposing (color)
 import Element.Font as Font
@@ -25,6 +26,7 @@ main =
     , subscriptions = subscriptions
     }
 
+port status : (String -> msg) -> Sub msg
 port input : (String -> msg) -> Sub msg
 port output : String -> Cmd msg
 
@@ -46,12 +48,14 @@ nocmd : Model -> ( Model, Cmd Msg )
 nocmd model = ( model, Cmd.none )
 
 init : ( Int, Int ) -> ( Model, Cmd Msg )
-init flag = nocmd
-    { state = Stopped
-    , errors = []
-    , search = ""
-    , size = { height = first flag, width = second flag }
-    }
+init flag =
+    ( { state = Stopped
+      , errors = []
+      , search = ""
+      , size = { height = first flag, width = second flag }
+      }
+    , sonicaStatusMsg 1 -1 -1 |> Debug.log "status msg" |> output
+    )
 
 type Msg
     = Play
@@ -78,7 +82,7 @@ update msg model =
             )
 
         Recv text ->
-            case decodeMsg text of
+            case decodeMsg (Debug.log "input" text) of
                 Ok v  -> nocmd { model | errors = model.errors ++ [ Debug.toString v ] }
                 Err t -> nocmd { model | errors = model.errors ++ [ "decodeerr in (" ++ text ++"): " ++ Debug.toString t ] }
 --            case (sonicaMsgDecoder text) of
@@ -124,8 +128,9 @@ viewErrors model =
     column
         [ width <| px <| model.size.width // 2
         , color (rgb 0 0 1)
-        ] <|
-        map (\e -> text e) model.errors
+        ]
+        [ paragraph [] <| map (\e -> text e) model.errors
+        ]
 
 viewSearch model =
     column [ width <| px <| model.size.width // 2, color (rgb 0 1 1)

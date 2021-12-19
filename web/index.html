@@ -8,16 +8,19 @@
         <div id="app"></div>
     </body>
     <script type="text/javascript">
-        var app = Elm.Main.init({
-        	node: document.getElementById('app'),
-        	flags: [ window.innerWidth, window.innerHeight ]
-    	});
     	var socket = new WebSocket("ws://localhost:7701");
-    	app.ports.output.subscribe(function(message) {
-			socket.send(message)
-    	});
-    	socket.addEventListener("message", function(event) {
-    		app.ports.input.send(event.data);
-		});
+    	var app = {}
+    	socket.addEventListener('open', function (event) {
+            app = Elm.Main.init({
+            	node: document.getElementById('app'),
+            	flags: [ window.innerWidth, window.innerHeight ]
+        	});
+        	app.ports.output.subscribe(function(message) {
+    			socket.send(message)
+        	});
+        	socket.addEventListener("message", function(event) {
+        		app.ports.input.send(event.data);
+    		});
+    	})
     </script>
 </html>

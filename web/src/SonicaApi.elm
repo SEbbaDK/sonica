@@ -4,43 +4,93 @@ import Json.Decode as D
 import Json.Encode as E
 import Dict exposing (Dict)
 
---type SonicaMsg channel return text
---    = Success channel return
---    | Error channel text
---    | JsonError text
-
-type alias SonicaMapMsg =
-    { msgtype : String
-    , channel : Int
-    , value : Dict String String
+type alias SonicaMsg =
+    { channel : Int
+    , msgtype : String
+    , value : Value
     }
 
-typeDecoder = D.field "type" D.string
-channelDecoder = D.field "channel" D.int
-valueDecoder = D.field "value" D.string
+type Value = VoidValue | ErrorValue String | SongValue Song | StatusValue Status
+
+type alias Song =
+    { title : String
+    , artist : String
+    , album : String
+    }
+
+type alias Status =
+    { current : Song
+    , length : Int
+    , progress : Int
+    , queueLength : Int
+    , queueHash : Int
+    , queue : List Song
+    , autoplay : List Song
+    }
+
+--------------
+-- DECODING --
+--------------
+
+errorDecoder = D.field "message" D.string
+errorValueDecoder = errorDecoder
+    |> D.andThen (\m -> D.succeed <| ErrorValue m)
+
+songDecoder = D.map3 Song
+    (D.field "title" D.string)
+    (D.field "artist" D.string)
+    (D.field "album" D.string)
+
+songValueDecoder = songDecoder
+    |> D.andThen (\s -> D.succeed <| SongValue s)
+
+statusDecoder = D.map7 Status
+    (D.field "current" songDecoder)
+    (D.field "length" D.int)
+    (D.field "progress" D.int)
+    (D.field "queue_length" D.int)
+    (D.field "queue_hash" D.int)
+    (D.field "queue" (D.list songDecoder))
+    (D.field "autoplay" (D.list songDecoder))
+
+statusValueDecoder = statusDecoder
+    |> D.andThen (\s -> D.succeed <| StatusValue s)
+
+valueDecoder typeString = case typeString of
+    "ReturnSong" -> songValueDecoder
+    "ReturnStatus" -> statusValueDecoder
+    "Return" -> D.succeed VoidValue
+    "Error" -> errorValueDecoder
+    _ -> D.fail <| "Can't do anything with type: " ++ typeString
 
 --sonicaMsgDecoder : String -> SonicaMsg Int String String
 sonicaMsgDecoder =
-    D.map3 SonicaMapMsg
-        (D.at ["type"] D.string)
-        (D.at ["channel"] D.int)
-        (D.at ["value"] (D.dict D.string))
-
---    case typeDecoder i of
---        Ok "error" -> Error (channelDecoder i) (valueDecoder i)
---        Ok "return" -> Success (channelDecoder i) (valueDecoder i)
---        Err message -> JsonError message
+    D.field "type" D.string |> D.andThen (\t ->
+        D.map3 SonicaMsg
+            (D.field "channel" D.int)
+            (D.succeed t)
+            (D.field "value" <| valueDecoder t)
+    )
 
 decodeMsg = D.decodeString sonicaMsgDecoder
 
-sonicaPlayMsg channel = sonicaMsg "Play" (Dict.empty) channel
-sonicaStopMsg channel = sonicaMsg "Stop" (Dict.empty) channel
+--------------
+-- ENCODING --
+--------------
 
-sonicaMsg : String -> Dict String String -> Int -> String
+sonicaPlayMsg channel = sonicaMsg "Play" [] channel
+sonicaStopMsg channel = sonicaMsg "Stop" [] channel
+sonicaStatusMsg channel queueMax autoplayMax =
+    sonicaMsg "Status"
+        [ ("queue_max", E.int queueMax)
+        , ("autoplay_max", E.int autoplayMax)
+        ]
+        channel
+
 sonicaMsg method value channel =
     E.encode 0 <| E.object
         [ ( "type", E.string method )
         , ( "channel", E.int channel )
-        , ( "value", E.dict identity E.string value )
+        , ( "value", E.object value )
         ]
 
