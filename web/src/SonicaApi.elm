@@ -10,7 +10,10 @@ type alias SonicaMsg =
     , value : Value
     }
 
-type Value = VoidValue | ErrorValue String | StatusValue Status
+type Value = VoidValue
+           | ErrorValue String
+           | StatusValue Status
+           | SearchValue (List EngineSearch)
 
 type alias Song =
     { title : String
@@ -26,6 +29,15 @@ type alias Status =
     , queueHash : Int
     , queue : List Song
     , autoplay : List Song
+    }
+
+type alias EngineSearch =
+    { name : String
+    , possibilities : Dict String Song
+    }
+
+type alias Search =
+    { results : List EngineSearch
     }
 
 --------------
@@ -58,8 +70,18 @@ statusDecoder = D.map7 Status
 statusValueDecoder = statusDecoder
     |> D.andThen (\s -> D.succeed <| StatusValue s)
 
+engineSearchDecoder = D.map2 EngineSearch
+    (D.field "name" D.string)
+    (D.field "possibilities" (D.dict songDecoder))
+
+searchDecoder = D.field "results" (D.list engineSearchDecoder)
+
+searchValueDecoder = searchDecoder
+    |> D.andThen (\s -> D.succeed <| SearchValue s)
+
 valueDecoder typeString = case typeString of
     "ReturnStatus" -> statusValueDecoder
+    "ReturnSearch" -> searchValueDecoder
     "Return" -> D.succeed VoidValue
     "Error" -> errorValueDecoder
     _ -> D.fail <| "Can't do anything with type: " ++ typeString
@@ -85,6 +107,13 @@ sonicaStatusMsg channel queueMax autoplayMax =
     sonicaMsg "Status"
         [ ("queue_max", E.int queueMax)
         , ("autoplay_max", E.int autoplayMax)
+        ]
+        channel
+
+sonicaSearchMsg channel search =
+    sonicaMsg "Search"
+        [ ("query", E.list E.string [ search ])
+        , ("engines", E.list E.string [])
         ]
         channel
 

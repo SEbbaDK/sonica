@@ -7,6 +7,7 @@ import List exposing (map)
 import Tuple exposing (first, second)
 import Time exposing (every)
 import Maybe exposing (withDefault, andThen)
+import Dict
 
 import Element exposing
     (Element, el, row, column, text, paragraph, image
@@ -15,6 +16,9 @@ import Element.Input as Input
 import Element.Background exposing (color)
 import Element.Font as Font
 import Element.Border as Border
+
+import Json.Decode as Decode
+import Html.Events
 
 import SonicaApi exposing (..)
 
@@ -48,6 +52,7 @@ type alias Model =
     , search : String
     , size : { width: Int, height: Int }
     , status : Maybe Status
+    , results : List EngineSearch
     }
 
 nocmd : Model -> ( Model, Cmd Msg )
@@ -60,6 +65,7 @@ init flag =
       , search = ""
       , size = { width = first flag, height = second flag }
       , status = Nothing
+      , results = []
       }
     , requestStatus
     )
@@ -68,6 +74,7 @@ type Msg
     = Play
     | Stop
     | Recv String
+    | Search
     | EnterSearch String
     | Resize Int Int
     | RequestStatus
@@ -88,6 +95,7 @@ update msg model =
         Recv text ->
             case decodeMsg text of
                 Ok v  -> case v.value of
+                    SearchValue r -> nocmd { model | results = r }
                     StatusValue s -> { model | status = Just s }
                         |> \m -> { m | state = (if s.current == Nothing then Stopped else Playing) }
                         |> nocmd
@@ -96,8 +104,11 @@ update msg model =
 
                 Err t -> nocmd { model | errors = model.errors ++ [ "decodeerr in (" ++ text ++"): " ++ Debug.toString t ] }
 
+        Search ->
+            ( model, sonicaSearchMsg 2 model.search |> Debug.log "search" |> output )
+
         EnterSearch text ->
-            nocmd { model | search = text }
+            nocmd { model | search = Debug.log "s" text }
 
         Resize width height ->
             nocmd { model | size = { width = width, height = height } }
@@ -108,6 +119,21 @@ update msg model =
 -----------
 -- VIEWS --
 -----------
+
+onEnter msg =
+    Element.htmlAttribute
+        (Html.Events.on "keyup"
+            (Decode.field "key" Decode.string
+                |> Decode.andThen
+                    (\key ->
+                        if key == "Enter" then
+                            Decode.succeed msg
+
+                        else
+                            Decode.fail "Not the enter key"
+                    )
+            )
+        )
 
 barHeight = 40
 sidebarWidth = 100
@@ -168,9 +194,9 @@ viewSongListItem song = el
 
 viewSongList : String -> List Song -> Element Msg
 viewSongList header songs =
-    column [ spacing 10, padding 10 ]
+    column [ spacing 10, padding 10, width fill ]
         [ el [ Font.size 30 ] <| text header
-        , column [ spacing 5 ] <| map (viewSongListItem) songs
+        , column [ spacing 5, width fill ] <| map (viewSongListItem) songs
         ]
 
 viewQueue : Model -> Element Msg
@@ -186,30 +212,34 @@ viewQueue model =
             Nothing ->
                 []
 
+viewSearchResults : Model -> List (Element Msg)
+viewSearchResults model =
+    map (\r -> viewSongList r.name (Dict.values r.possibilities)) model.results
+
 viewSearch model =
     column
         [ width fill
         , height fill
         , padding 10
-        ]
-        [ Input.text
+        , onEnter Search
+        ] <|
+        [ Input.search
             [ width fill
-            , Element.alignTop
             ]
             { text = model.search
             , onChange = EnterSearch
             , label = Input.labelHidden "search"
             , placeholder = Just <| Input.placeholder [] <| text "Search"
             }
-        , text model.search
         ]
+        ++ viewSearchResults model
 
 viewSidebar model = column
     [ color (rgb 0.9 0.9 0.9)
     , height fill
     , width <| px sidebarWidth
     ]
-    [ column [ padding 10 ] [ text "hi" ]
+    [ column [ padding 10, width fill ] [ el [ Element.centerX ] <| text "Sonica" ]
     , image
         [ width fill
         , Element.alignBottom
@@ -227,6 +257,7 @@ viewMain model = el
     ] <| row []
         [ viewQueue model
         , viewSearch model
+        --, viewErrors model
         ]
 
 viewApp model = row
