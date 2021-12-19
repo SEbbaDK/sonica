@@ -22,35 +22,36 @@ def test(sonica, socket, value):
 
 # TODO, sanitation on the stuff we return here?
 def handle_message(raw_msg, sonica, websocket):
-    error_resp = {"type": "error", "value": "", "token": None}
+    error_resp = {"type": "Error", "value": "", "channel": None}
 
     try:
-        message = validate({"token": int, "method": str, "value": None}, raw_msg)
+        message = validate({"channel": int, "type": str, "value": {}}, raw_msg)
 
     except ValidationException as e:
-        error_resp["value"] = str(e)
+        error_resp["channel"] = raw_msg["channel"]
+        error_resp["value"]["message"] = str(e)
         return error_resp
 
-    error_resp["token"] = message["token"]
+    error_resp["channel"] = message["channel"]
 
-    methodname = message["method"]
+    methodname = message["type"]
     if methodname not in api_methods:
-        error_resp["value"] =  f"no such method '{methodname}'"
+        error_resp["value"]["message"] =  f"no such method '{methodname}'"
         return error_resp
 
-    response = {"type": "return", "value": {}, "token": message["token"]}
+    response = {"type": "", "value": {}, "channel": message["channel"]}
     try:
         type, ret = api_methods[methodname](sonica, websocket, message["value"])
         response["value"] = ret
-        response["value_type"] = type
+        response["type"] = type
     except (ValidationException, ApiException) as e:
-        error_resp["value"] = str(e)
+        error_resp["value"]["message"] = str(e)
         return error_resp
     except Exception as e:
         # If we throw here we stall the websocket,
         # so catch everything and print it
         print(e)
-        error_resp["value"] = "general server error"
+        error_resp["value"]["message"] = "general server error"
         return error_resp
 
     return response
@@ -62,12 +63,17 @@ async def main(sonica, host, port):
     async def echo(websocket, hello):
         print("Got connection")
         async for message in websocket:
+            print("Received: " + message)
             try:
                 message = json.loads(message)
                 response = handle_message(message, sonica, websocket)
                 await websocket.send(json.dumps(response))
-            except:
-                await websocket.send(json.dumps({ "type" : "error", "value" : "Invalid JSON" }))
+            except json.JSONDecodeError as e:
+                await websocket.send(json.dumps({ "channel" : 0, "type" : "Error", "value" : { "message" : "Invalid JSON" } }))
+            except Exception as e:
+                await websocket.send(json.dumps({ "channel" : 0, "type" : "Error", "value" : { "message" : "Internal server error" } }))
+                print("Encountered internal server error:")
+                raise e
 
     async with websockets.serve(echo, host, port):
         await asyncio.Future()
