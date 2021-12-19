@@ -5,9 +5,11 @@ import Browser.Events exposing (onResize)
 import Browser.Dom as Dom
 import List exposing (map)
 import Tuple exposing (first, second)
+import Time exposing (every)
+import Maybe exposing (withDefault, andThen)
 
 import Element exposing
-    (el, row, column, text, paragraph
+    (Element, el, row, column, text, paragraph, image
     , rgb, width, fill, height, padding, spacing, fillPortion, px)
 import Element.Input as Input
 import Element.Background exposing (color)
@@ -16,7 +18,7 @@ import Element.Border as Border
 
 import SonicaApi exposing (..)
 
-type PlayState = Playing | Paused | Stopped
+type PlayState = Playing | Stopped
 
 main =
   Browser.element
@@ -26,22 +28,26 @@ main =
     , subscriptions = subscriptions
     }
 
-port status : (String -> msg) -> Sub msg
 port input : (String -> msg) -> Sub msg
 port output : String -> Cmd msg
+
+requestStatus =
+    sonicaStatusMsg 1 -1 -1 |> Debug.log "status request" |> output
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.batch
         [ input Recv
         , onResize Resize
+        , every 5000 (\_ -> RequestStatus)
         ]
 
 type alias Model =
     { state : PlayState
     , errors : List String
-    , search: String
-    , size: { width: Int, height: Int }
+    , search : String
+    , size : { width: Int, height: Int }
+    , status : Maybe Status
     }
 
 nocmd : Model -> ( Model, Cmd Msg )
@@ -52,29 +58,27 @@ init flag =
     ( { state = Stopped
       , errors = []
       , search = ""
-      , size = { height = first flag, width = second flag }
+      , size = { width = first flag, height = second flag }
+      , status = Nothing
       }
-    , sonicaStatusMsg 1 -1 -1 |> Debug.log "status msg" |> output
+    , requestStatus
     )
 
 type Msg
     = Play
-    | Pause
     | Stop
     | Recv String
     | EnterSearch String
     | Resize Int Int
+    | RequestStatus
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         Play ->
             ( { model | state = Playing }
-            , sonicaPlayMsg 0 |> Debug.log "sent message" |> output
+            , sonicaPlayMsg 0 |> output
             )
-
-        Pause ->
-            nocmd { model | state = Paused }
 
         Stop ->
             ( { model | state = Stopped }
@@ -82,18 +86,15 @@ update msg model =
             )
 
         Recv text ->
-            case decodeMsg (Debug.log "input" text) of
-                Ok v  -> nocmd { model | errors = model.errors ++ [ Debug.toString v ] }
+            case decodeMsg text of
+                Ok v  -> case v.value of
+                    StatusValue s -> { model | status = Just s }
+                        |> \m -> { m | state = (if s.current == Nothing then Stopped else Playing) }
+                        |> nocmd
+                    ErrorValue e -> nocmd { model | errors = e :: model.errors }
+                    VoidValue -> nocmd model
+
                 Err t -> nocmd { model | errors = model.errors ++ [ "decodeerr in (" ++ text ++"): " ++ Debug.toString t ] }
---            case (sonicaMsgDecoder text) of
---                Success token value ->
---                    nocmd model
---
---                Failure token value ->
---                    nocmd { model | errors = model.errors ++ [ value ] }
---
---                Error message ->
---                    nocmd model
 
         EnterSearch text ->
             nocmd { model | search = text }
@@ -101,9 +102,15 @@ update msg model =
         Resize width height ->
             nocmd { model | size = { width = width, height = height } }
 
+        RequestStatus ->
+            ( Debug.log "Requst" model, requestStatus )
+
 -----------
 -- VIEWS --
 -----------
+
+barHeight = 40
+sidebarWidth = 100
 
 viewPlaypauseButton state =
     if state /= Playing
@@ -118,11 +125,31 @@ viewPlayButtons state =
         --, Input.button [] { label = text "⏹", onPress = Just Stop }
         ]
 
-viewBar state =
-    el [ color (rgb 1 0 0), width fill, padding 5 ] <|
-        row []
-            [ viewPlayButtons state
+viewSong : Maybe Song -> Element Msg
+viewSong maybeSong =
+    paragraph [ padding 3 ] <| case maybeSong of
+        Just song ->
+            [ text song.title
+            , el [ Element.alpha 0.25 ] <| text " – "
+            , el [ Element.alpha 0.66 ] <| text song.artist
+            -- ] ++ if song.album == "" then [] else
+            -- [ text " ["
+            -- , text song.album
+            -- , text "]"
             ]
+        Nothing ->
+            []
+
+viewBar model = el
+    [ color (rgb 0.8 0.2 0)
+    , Font.color (rgb 0.95 0.95 0.95)
+    , width fill
+    , padding 5
+    , height <| px barHeight
+    ] <| row [ spacing 10 ]
+        [ viewPlayButtons model.state
+        , model.status |> andThen (\s -> s.current) |> viewSong
+        ]
 
 viewErrors model =
     column
@@ -132,10 +159,39 @@ viewErrors model =
         [ paragraph [] <| map (\e -> text e) model.errors
         ]
 
+viewSongListItem song = el
+    [ color (rgb 0.9 0.9 0.9)
+    , width fill
+    ]
+    (Just song |> viewSong)
+    
+
+viewSongList : String -> List Song -> Element Msg
+viewSongList header songs =
+    column [ spacing 10, padding 10 ]
+        [ el [ Font.size 30 ] <| text header
+        , column [ spacing 5 ] <| map (viewSongListItem) songs
+        ]
+
+viewQueue : Model -> Element Msg
+viewQueue model =
+    column
+        [ width fill
+        ]
+        <| case model.status of
+            Just status ->
+                [ viewSongList "Queue" status.queue
+                , viewSongList "Autoplay" status.autoplay
+                ]
+            Nothing ->
+                []
+
 viewSearch model =
-    column [ width <| px <| model.size.width // 2, color (rgb 0 1 1)
-            , height fill
-            ]
+    column
+        [ width fill
+        , height fill
+        , padding 10
+        ]
         [ Input.text
             [ width fill
             , Element.alignTop
@@ -148,17 +204,49 @@ viewSearch model =
         , text model.search
         ]
 
-viewApp model =
-    el [ width <| px <| model.size.width, height fill, Element.scrollbarY ] <|
-        row []
-            [ viewErrors model
-            , viewSearch model
-            ]
+viewSidebar model = column
+    [ color (rgb 0.9 0.9 0.9)
+    , height fill
+    , width <| px sidebarWidth
+    ]
+    [ column [ padding 10 ] [ text "hi" ]
+    , image
+        [ width fill
+        , Element.alignBottom
+        ]
+        { src = "../media/avatar-transparent.png"
+        , description = "Sonica Avatar"
+        }
+    ]
+
+viewMain model = el
+    [ width <| px <| model.size.width - sidebarWidth
+    , height fill
+    , Element.scrollbarY
+    , padding 20
+    ] <| row []
+        [ viewQueue model
+        , viewSearch model
+        ]
+
+viewApp model = row
+    [ height <| px <| model.size.height - barHeight
+    , width <| px <| model.size.width
+    ]
+    [ viewSidebar model
+    , viewMain model
+    ]
+
+viewElement : Model -> Element Msg
+viewElement model =
+    column [ width fill, height fill ]
+        [ viewApp model
+        , viewBar model
+        ]
 
 view model =
-    Element.layout [ width fill, height fill ] <|
-        column [ width fill, height fill ]
-            [ viewApp model
-            , viewBar model.state
-            ]
+    Element.layout
+        [ width <| px model.size.width
+        , height <| px model.size.height
+        ] <| viewElement model
 

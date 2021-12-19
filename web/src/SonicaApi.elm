@@ -10,7 +10,7 @@ type alias SonicaMsg =
     , value : Value
     }
 
-type Value = VoidValue | ErrorValue String | SongValue Song | StatusValue Status
+type Value = VoidValue | ErrorValue String | StatusValue Status
 
 type alias Song =
     { title : String
@@ -19,7 +19,7 @@ type alias Song =
     }
 
 type alias Status =
-    { current : Song
+    { current : Maybe Song
     , length : Int
     , progress : Int
     , queueLength : Int
@@ -41,11 +41,13 @@ songDecoder = D.map3 Song
     (D.field "artist" D.string)
     (D.field "album" D.string)
 
-songValueDecoder = songDecoder
-    |> D.andThen (\s -> D.succeed <| SongValue s)
+songMaybeDecoder = songDecoder
+    |> D.andThen (\s -> D.succeed <|
+        if s.title == "" then Nothing else Just s
+    )
 
 statusDecoder = D.map7 Status
-    (D.field "current" songDecoder)
+    (D.field "current" songMaybeDecoder)
     (D.field "length" D.int)
     (D.field "progress" D.int)
     (D.field "queue_length" D.int)
@@ -57,7 +59,6 @@ statusValueDecoder = statusDecoder
     |> D.andThen (\s -> D.succeed <| StatusValue s)
 
 valueDecoder typeString = case typeString of
-    "ReturnSong" -> songValueDecoder
     "ReturnStatus" -> statusValueDecoder
     "Return" -> D.succeed VoidValue
     "Error" -> errorValueDecoder
