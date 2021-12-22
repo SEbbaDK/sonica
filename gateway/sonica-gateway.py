@@ -2,11 +2,9 @@
 
 import asyncio
 import websockets
-from typing import Dict, List
-import sys
+import typer
 import json
 import grpc
-import traceback
 
 from sonica_pb2_grpc import SonicaStub
 from validate import validate, ValidationException
@@ -15,10 +13,7 @@ from validate import validate, ValidationException
 from methods import api_methods, api_method, ApiException
 
 
-@api_method("test", {"hej": int, "lol": [str]})
-def test(sonica, socket, value):
-    print("got test message", value)
-
+cli = typer.Typer()
 
 # TODO, sanitation on the stuff we return here?
 def handle_message(raw_msg, sonica, websocket):
@@ -26,7 +21,6 @@ def handle_message(raw_msg, sonica, websocket):
 
     try:
         message = validate({"token": int, "method": str, "value": None}, raw_msg)
-
     except ValidationException as e:
         error_resp["value"] = str(e)
         return error_resp
@@ -56,11 +50,10 @@ def handle_message(raw_msg, sonica, websocket):
     return response
 
 
-async def main(sonica, host, port):
+async def server_start(sonica, host, port):
     print(f"Listening for websocket connections on {host}:{port}")
 
     async def echo(websocket, hello):
-        print("Got connection")
         async for message in websocket:
             try:
                 message = json.loads(message)
@@ -72,12 +65,21 @@ async def main(sonica, host, port):
     async with websockets.serve(echo, host, port):
         await asyncio.Future()
 
-if __name__ == "__main__":
-    address = "localhost:7700" 
+
+@cli.command()
+def start(
+        sonica_host: str = "localhost",
+        sonica_port: int = 7700,
+        listen_host: str = "localhost",
+        listen_port: int = 7701
+        ):
+    address = f"{sonica_host}:{sonica_port}"
     print(f"Connecting to daemon at {address}")
     channel = grpc.insecure_channel(address)
     stub = SonicaStub(channel)
 
-    host = "localhost"
-    port = 7701
-    asyncio.run(main(stub, host, port))
+    asyncio.run(server_start(stub, listen_host, listen_port))
+
+
+if __name__ == "__main__":
+    cli()

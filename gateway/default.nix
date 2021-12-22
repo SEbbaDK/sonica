@@ -9,6 +9,7 @@ let
 		grpcio
 		websockets
 		jsonschema
+		typer
 	]);
 in
 mkDerivation rec {
