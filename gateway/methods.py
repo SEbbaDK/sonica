@@ -126,8 +126,9 @@ def search(sonica, socket, value):
     ])
 
 
-@api_method("Choose", {"possibility_id": int, "add_to_top": bool})
+@api_method("Choose", {"possibility_id": str, "add_to_top": bool})
 def choose(sonica, socket, value):
+    value['possibility_id'] = int(value['possibility_id'])
     resp = sonica.Choose(pb2.Search.Choice(**value))
     return response_from_result(resp)
 
