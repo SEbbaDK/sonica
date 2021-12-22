@@ -13,7 +13,7 @@ type alias SonicaMsg =
 type Value = VoidValue
            | ErrorValue String
            | StatusValue Status
-           | SearchValue (List EngineSearch)
+           | SearchValue (List EngineSearchResult)
 
 type alias Song =
     { title : String
@@ -31,13 +31,13 @@ type alias Status =
     , autoplay : List Song
     }
 
-type alias EngineSearch =
+type alias EngineSearchResult =
     { name : String
     , possibilities : Dict String Song
     }
 
 type alias Search =
-    { results : List EngineSearch
+    { results : List EngineSearchResult
     }
 
 --------------
@@ -70,11 +70,11 @@ statusDecoder = D.map7 Status
 statusValueDecoder = statusDecoder
     |> D.andThen (\s -> D.succeed <| StatusValue s)
 
-engineSearchDecoder = D.map2 EngineSearch
+engineSearchResultDecoder = D.map2 EngineSearchResult
     (D.field "name" D.string)
-    (D.field "possibilities" (D.dict songDecoder))
+    (D.field "possibilities" <| D.dict songDecoder)
 
-searchDecoder = D.field "results" (D.list engineSearchDecoder)
+searchDecoder = D.field "results" (D.list engineSearchResultDecoder)
 
 searchValueDecoder = searchDecoder
     |> D.andThen (\s -> D.succeed <| SearchValue s)
@@ -114,6 +114,13 @@ sonicaSearchMsg channel search =
     sonicaMsg "Search"
         [ ("query", E.list E.string [ search ])
         , ("engines", E.list E.string [])
+        ]
+        channel
+
+sonicaChooseMsg channel key top =
+    sonicaMsg "Choose"
+        [ ("possibility_id", E.string key)
+        , ("add_to_top", E.bool top)
         ]
         channel
 

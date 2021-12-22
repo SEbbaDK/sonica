@@ -52,7 +52,7 @@ type alias Model =
     , search : String
     , size : { width: Int, height: Int }
     , status : Maybe Status
-    , results : List EngineSearch
+    , results : List EngineSearchResult
     }
 
 nocmd : Model -> ( Model, Cmd Msg )
@@ -78,6 +78,7 @@ type Msg
     | EnterSearch String
     | Resize Int Int
     | RequestStatus
+    | Choose String
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -116,6 +117,9 @@ update msg model =
         RequestStatus ->
             ( Debug.log "Requst" model, requestStatus )
 
+        Choose key ->
+            ( { model | results = [] }, sonicaChooseMsg 3 key False |> Debug.log "choose" |> output )
+
 -----------
 -- VIEWS --
 -----------
@@ -136,7 +140,11 @@ onEnter msg =
         )
 
 barHeight = 40
-sidebarWidth = 100
+sidebarWidth = 150
+appPadding = 10
+narrow model = model.size.width < 900
+mainWidth model = model.size.width - sidebarWidth
+mainColumnWidth model = mainWidth model // (if narrow model then 1 else 2)
 
 viewPlaypauseButton state =
     if state /= Playing
@@ -178,16 +186,20 @@ viewBar model = el
         ]
 
 viewErrors model =
-    column
-        [ width <| px <| model.size.width // 2
-        , color (rgb 0 0 1)
+    if List.isEmpty model.errors
+    then Element.none
+    else column
+        [ width <| px <| mainColumnWidth model
+        , color (rgb 1 0 0)
+        , padding appPadding
         ]
-        [ paragraph [] <| map (\e -> text e) model.errors
-        ]
+        <| map (\e -> paragraph [] [text e]) model.errors
 
 viewSongListItem song = el
     [ color (rgb 0.9 0.9 0.9)
     , width fill
+    , padding 5
+    , Font.size 16
     ]
     (Just song |> viewSong)
     
@@ -202,7 +214,8 @@ viewSongList header songs =
 viewQueue : Model -> Element Msg
 viewQueue model =
     column
-        [ width fill
+        [ width <| px <| mainColumnWidth model
+        , padding appPadding
         ]
         <| case model.status of
             Just status ->
@@ -212,15 +225,32 @@ viewQueue model =
             Nothing ->
                 []
 
+viewSearchResultItem key song =
+    Input.button []
+        { label = viewSong <| Just song
+        , onPress = Just <| Choose key
+        }
+
+viewSearchResult : EngineSearchResult -> Element Msg
+viewSearchResult result =
+    column [ padding 10 ] <|
+        [ el [ Font.size 24, Font.bold ] <| text result.name ] ++
+        Dict.foldl
+            (\k -> \v -> \l -> (viewSearchResultItem k v) :: l)
+            []
+            result.possibilities
+
 viewSearchResults : Model -> List (Element Msg)
 viewSearchResults model =
-    map (\r -> viewSongList r.name (Dict.values r.possibilities)) model.results
+    [ column [ color (rgb 0.9 0.9 0.9) ] <|
+        map (viewSearchResult) model.results
+    ]
 
 viewSearch model =
     column
-        [ width fill
+        [ width <| px <| mainColumnWidth model
         , height fill
-        , padding 10
+        , padding appPadding
         , onEnter Search
         ] <|
         [ Input.search
@@ -239,7 +269,7 @@ viewSidebar model = column
     , height fill
     , width <| px sidebarWidth
     ]
-    [ column [ padding 10, width fill ] [ el [ Element.centerX ] <| text "Sonica" ]
+    [ column [ padding 10, width fill ] [ el [ Font.size 30, Font.family [ Font.serif ], Font.bold, Element.centerX ] <| text "Sonica" ]
     , image
         [ width fill
         , Element.alignBottom
@@ -253,11 +283,13 @@ viewMain model = el
     [ width <| px <| model.size.width - sidebarWidth
     , height fill
     , Element.scrollbarY
-    , padding 20
-    ] <| row []
-        [ viewQueue model
-        , viewSearch model
-        --, viewErrors model
+    --, padding 20
+    ] <| (if narrow model then column else row) []
+        [ viewSearch model
+        , column []
+            [ viewErrors model
+            , viewQueue model
+            ]
         ]
 
 viewApp model = row
