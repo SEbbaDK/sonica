@@ -6,6 +6,7 @@
 let
 	sonica = import ../. { inherit pkgs; };
 	pythonWithPackages = python.withPackages (pkg: with pkg; [
+    	typer
 		grpcio
 		websockets
 		jsonschema

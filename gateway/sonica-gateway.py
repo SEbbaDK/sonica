@@ -7,6 +7,7 @@ import sys
 import json
 import grpc
 import traceback
+import typer
 
 from sonica_pb2_grpc import SonicaStub
 from validate import validate, ValidationException
@@ -14,6 +15,7 @@ from validate import validate, ValidationException
 
 from methods import api_methods, api_method, ApiException
 
+verbose_mode = False
 
 @api_method("test", {"hej": int, "lol": [str]})
 def test(sonica, socket, value):
@@ -63,27 +65,44 @@ async def main(sonica, host, port):
     async def echo(websocket, hello):
         print("Got connection")
         async for message in websocket:
-            print("Received: " + message)
+            if verbose_mode:
+                print("\nReceived: " + message)
             try:
                 message = json.loads(message)
                 response = handle_message(message, sonica, websocket)
-                await websocket.send(json.dumps(response))
+                json_response = json.dumps(response)
+                if verbose_mode:
+                    print("\nSent:     " + json_response[0:120])
+                await websocket.send(json_response)
             except json.JSONDecodeError as e:
-                await websocket.send(json.dumps({ "channel" : 0, "type" : "Error", "value" : { "message" : "Invalid JSON" } }))
+                response = { "channel" : 0, "type" : "Error", "value" : { "message" : "Invalid JSON" } }
+                json_response = json.dumps(response)
+                if verbose_mode:
+                    print("\nSent:     " + json_response[0:120])
+                await websocket.send(json_response)
             except Exception as e:
-                await websocket.send(json.dumps({ "channel" : 0, "type" : "Error", "value" : { "message" : "Internal server error" } }))
+                response = { "channel" : 0, "type" : "Error", "value" : { "message" : "Internal server error" } }
+                json_response = json.dumps(response)
+                if verbose_mode:
+                    print("\nSent:     " + json_response[0:120])
+                await websocket.send(json_response)
                 print("Encountered internal server error:")
                 raise e
 
     async with websockets.serve(echo, host, port):
         await asyncio.Future()
 
-if __name__ == "__main__":
-    address = "localhost:7700" 
-    print(f"Connecting to daemon at {address}")
-    channel = grpc.insecure_channel(address)
+def program(daemon : str = "localhost:7700",
+			host : str = "localhost",
+			port : int = 7701,
+			verbose : bool = False,
+			):
+    global verbose_mode
+    verbose_mode = verbose
+    print(f"Connecting to daemon at {daemon}")
+    channel = grpc.insecure_channel(daemon)
     stub = SonicaStub(channel)
-
-    host = "localhost"
-    port = 7701
     asyncio.run(main(stub, host, port))
+
+if __name__ == "__main__":
+    typer.run(program)

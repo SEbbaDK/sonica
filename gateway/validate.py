@@ -28,7 +28,7 @@ def validate(scheme, thing):
     if type(scheme) is dict:
         if type(thing) is dict:
             try:
-                print("validating " + str(thing) + " with " + str(scheme))
+                #print("validating " + str(thing) + " with " + str(scheme))
                 return {key: validate(t, thing[key])
                         for key, t in scheme.items()}
             except KeyError as e:
