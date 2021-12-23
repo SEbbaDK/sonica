@@ -73,6 +73,7 @@ init flag =
 type Msg
     = Play
     | Stop
+    | Skip
     | Recv String
     | Search
     | EnterSearch String
@@ -91,6 +92,11 @@ update msg model =
         Stop ->
             ( { model | state = Stopped }
             , sonicaStopMsg 0 |> output
+            )
+
+        Skip ->
+            ( model
+            , sonicaSkipMsg 0 |> output
             )
 
         Recv text ->
@@ -156,6 +162,7 @@ viewPlaypauseButton state =
 viewPlayButtons state =
     el [ Font.size 25 ] <| row [ spacing 5 ]
         [ viewPlaypauseButton state
+        , Input.button [] { label = text "⏭", onPress = Just Skip }
         --, Input.button [] { label = text "⏹", onPress = Just Stop }
         ]
 

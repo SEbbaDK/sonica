@@ -103,6 +103,7 @@ decodeMsg = D.decodeString sonicaMsgDecoder
 
 sonicaPlayMsg channel = sonicaMsg "Play" [] channel
 sonicaStopMsg channel = sonicaMsg "Stop" [] channel
+sonicaSkipMsg channel = sonicaMsg "Skip" [] channel
 sonicaStatusMsg channel queueMax autoplayMax =
     sonicaMsg "Status"
         [ ("queue_max", E.int queueMax)
