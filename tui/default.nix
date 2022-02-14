@@ -11,7 +11,7 @@ mkDerivation rec {
 	pythonWithPackages = python.withPackages (pkg: with pkg; [
 		grpcio
 		typer
-		curtsies
+		urwid
 	]);
 
 	buildInputs = [ sonica.prepare ];
