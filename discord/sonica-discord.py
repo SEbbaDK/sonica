@@ -8,6 +8,8 @@ from discord.ext import commands
 from sonica_pb2_grpc import SonicaStub
 from sonica_pb2 import Empty, Search, Status
 
+MAX_MSG_LENGTH = 2000
+
 bot = commands.Bot(command_prefix='')
 
 def surround(surround, string):
@@ -51,18 +53,26 @@ async def search(ctx, *queries):
 
     # Note this is the same code as in the cli, so any bugs here will be shared there
     mes = 'Here you go ^-^\n'
+    overflow_trail = "\n... And more I couldn't fit in 1 message! Try narrowing your search to a specific engine ;3"
+    len_overflow = len(overflow_trail)
     counter = 0
     map = {}
-    for e in r.results:
-        mes += surround('**', e.name) + '\n'
-        if len(e.possibilities) == 0:
-            mes += 'Nothing\n'
-        else:
-            for id, song in e.possibilities.items():
-                counter += 1
-                mes += f'{counter}: {songformat(song)}\n'
-                map[counter] = (id, song)
-        mes += '\n'
+    try:
+        for e in r.results:
+            mes = add_if_fits(mes, surround('**', e.name) + '\n', len_overflow, MAX_MSG_LENGTH)
+
+            if len(e.possibilities) == 0:
+                mes = add_if_fits(mes, 'Nothing\n', len_overflow, MAX_MSG_LENGTH)
+
+            else:
+                for id, song in e.possibilities.items():
+                    counter += 1
+                    mes = add_if_fits(mes, f'{counter}: {songformat(song)}\n', len_overflow, MAX_MSG_LENGTH)
+                    map[counter] = (id, song)
+            mes = add_if_fits(mes, '\n', len_overflow, MAX_MSG_LENGTH)
+    except MessageOverflow:
+        mes += overflow_trail
+
     enumerators[ctx.message.channel] = map
     await ctx.message.channel.send(mes)
 
@@ -115,6 +125,19 @@ async def status(ctx):
 async def on_ready():
     print(f"Logged on as {bot.user}!")
 
+
+def add_if_fits(original: str, add: str, len_overflow: int, max_len: int):
+    added = original + add
+    if len(added) >= max_len - len_overflow:
+        raise MessageOverflow
+    else:
+        return added
+
+
+class MessageOverflow(Exception):
+    pass
+
+
 def main(token : str):
     global daemon
     channel = grpc.insecure_channel('localhost:7700')
@@ -122,4 +145,3 @@ def main(token : str):
     bot.run(token)
 
 typer.run(main)
-

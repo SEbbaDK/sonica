@@ -1,6 +1,11 @@
 grpcio
 typer
+yt-dlp
+requests
+youtube-search
+ytmusicapi
+setuptools
 deemix
-pytaglib
+mutagen
 pydub
 simpleaudio
