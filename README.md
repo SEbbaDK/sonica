@@ -49,7 +49,7 @@ To get everything working on Arch and Arch-derived distributions, follow the fol
 1. Install the `crystal` and `shards` packages from the Arch repositories
 2. In a terminal, navigate to the root directory of the Sonica repo
 3. Run `shards init`
-4. Run `echo -e "dependencies:\n  logger:\n    github: crystal-lang/logger.cr\n  grpc:\n    github: jgaskins/grpc" >> shard.yml`
+4. Run `echo -e "dependencies:\n\tlogger:\n\t\tgithub: crystal-lang/logger.cr\n\tgrpc:\n\t\tgithub: jgaskins/grpc" >> shard.yml`
 5. Run `shards install` and then restart your shell
 
 From here, you can start install requirements and preparing specific installation modules. For python-based modules (such as `discord` and `daemon`):
