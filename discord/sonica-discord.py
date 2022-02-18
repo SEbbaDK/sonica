@@ -53,34 +53,28 @@ async def search(ctx, *queries):
 
     # Note this is the same code as in the cli, so any bugs here will be shared there
     mes = 'Here you go ^-^\n'
-    overflow_trail = "\n... And more I couldn't fit in 1 message! Try narrowing your search to a specific engine ;3"
-    len_overflow = len(overflow_trail)
     counter = 0
     map = {}
-    try:
-        for e in r.results:
-            mes = add_if_fits(mes, surround('**', e.name) + '\n', len_overflow, MAX_MSG_LENGTH)
+    for e in r.results:
+        mes += surround('**', e.name) + '\n'
 
-            if len(e.possibilities) == 0:
-                mes = add_if_fits(mes, 'Nothing\n', len_overflow, MAX_MSG_LENGTH)
-
-            else:
-                for id, song in e.possibilities.items():
-                    counter += 1
-                    mes = add_if_fits(mes, f'{counter}: {songformat(song)}\n', len_overflow, MAX_MSG_LENGTH)
-                    map[counter] = (id, song)
-            mes = add_if_fits(mes, '\n', len_overflow, MAX_MSG_LENGTH)
-    except MessageOverflow:
-        mes += overflow_trail
+        if len(e.possibilities) == 0:
+            mes += 'Nothing\n'
+        else:
+            for id, song in e.possibilities.items():
+                counter += 1
+                mes += f'{counter}: {songformat(song)}\n'
+                map[counter] = (id, song)
+        mes += '\n'
 
     enumerators[ctx.message.channel] = map
-    await ctx.message.channel.send(mes)
+    await safe_send(ctx, mes, overflow="\n... And more I couldn't fit in 1 message! Try narrowing your search ;3")
 
 @bot.command()
 async def choose(ctx, *choices):
     global enumerators
 
-    if not ctx.message.channel in enumerators:
+    if ctx.message.channel not in enumerators:
         return await ctx.message.channel.send('I am not asking you to pick anything')
 
     treated_choices = []
@@ -118,7 +112,7 @@ async def status(ctx):
         counter += 1
         mes += f'{str(counter).rjust(3)}: {songformat(s)}\n'
 
-    await ctx.message.channel.send(mes)
+    await safe_send(ctx, mes)
 
 
 @bot.event
@@ -126,16 +120,18 @@ async def on_ready():
     print(f"Logged on as {bot.user}!")
 
 
-def add_if_fits(original: str, add: str, len_overflow: int, max_len: int):
-    added = original + add
-    if len(added) >= max_len - len_overflow:
-        raise MessageOverflow
+def trunc_to_max_with_message(original: str, overflow_msg: str, seperator: str, max_len: int):
+    if len(original) > max_len:
+        while (len(original) + len(overflow_msg)) > max_len:
+            original = original.rsplit(seperator, 1)[0]
+        return original + overflow_msg
     else:
-        return added
+        return original
 
 
-class MessageOverflow(Exception):
-    pass
+async def safe_send(ctx, mes, overflow="\n... And more I couldn't fit in 1 message! ;O", sep='\n'):
+    mes = trunc_to_max_with_message(mes, overflow, sep, MAX_MSG_LENGTH)
+    await ctx.message.channel.send(mes)
 
 
 def main(token : str):
