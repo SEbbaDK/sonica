@@ -23,6 +23,7 @@ async def play(ctx):
         await ctx.message.channel.send(r.reason)
     else:
         await ctx.message.channel.send("Okie, i'll play")
+        await update_presence()
 
 @bot.command()
 async def stop(ctx):
@@ -31,6 +32,7 @@ async def stop(ctx):
         await ctx.message.channel.send(r.reason)
     else:
         await ctx.message.channel.send("Okie, i'll stop then :(")
+        await update_presence(no_presence=True)
 
 @bot.command()
 async def skip(ctx):
@@ -39,6 +41,7 @@ async def skip(ctx):
         await ctx.message.channel.send(r.reason)
     else:
         await ctx.message.channel.send("I'm just playing what you ask me to, but okay :/")
+        await update_presence()
 
 enumerators = {}
 
@@ -115,6 +118,17 @@ async def status(ctx):
 async def on_ready():
     print(f"Logged on as {bot.user}!")
 
+
+async def update_presence(no_presence = False):
+    if not no_presence:
+        r = daemon.Status(Status.Query(queue_max=0, autoplay_max=0))
+        song = r.current
+        game = discord.Game(f'{song.title} by {song.artist}')
+        await bot.change_presence(activity=game)
+    else:
+        await bot.change_presence(activity=None)
+
+
 def main(token : str):
     global daemon
     channel = grpc.insecure_channel('localhost:7700')
@@ -122,4 +136,3 @@ def main(token : str):
     bot.run(token)
 
 typer.run(main)
-
