@@ -8,6 +8,8 @@ from discord.ext import commands
 from sonica_pb2_grpc import SonicaStub
 from sonica_pb2 import Empty, Search, Status
 
+MAX_MSG_LENGTH = 2000
+
 bot = commands.Bot(command_prefix='')
 
 def surround(surround, string):
@@ -58,6 +60,7 @@ async def search(ctx, *queries):
     map = {}
     for e in r.results:
         mes += surround('**', e.name) + '\n'
+
         if len(e.possibilities) == 0:
             mes += 'Nothing\n'
         else:
@@ -66,14 +69,15 @@ async def search(ctx, *queries):
                 mes += f'{counter}: {songformat(song)}\n'
                 map[counter] = (id, song)
         mes += '\n'
+
     enumerators[ctx.message.channel] = map
-    await ctx.message.channel.send(mes)
+    await safe_send(ctx, mes, overflow="\n... And more I couldn't fit in 1 message! Try narrowing your search ;3")
 
 @bot.command()
 async def choose(ctx, *choices):
     global enumerators
 
-    if not ctx.message.channel in enumerators:
+    if ctx.message.channel not in enumerators:
         return await ctx.message.channel.send('I am not asking you to pick anything')
 
     treated_choices = []
@@ -111,7 +115,7 @@ async def status(ctx):
         counter += 1
         mes += f'{str(counter).rjust(3)}: {songformat(s)}\n'
 
-    await ctx.message.channel.send(mes)
+    await safe_send(ctx, mes)
 
 
 @bot.event
@@ -127,6 +131,20 @@ async def update_presence(no_presence = False):
         await bot.change_presence(activity=game)
     else:
         await bot.change_presence(activity=None)
+
+
+def trunc_to_max_with_message(original: str, overflow_msg: str, seperator: str, max_len: int):
+    if len(original) > max_len:
+        while (len(original) + len(overflow_msg)) > max_len:
+            original = original.rsplit(seperator, 1)[0]
+        return original + overflow_msg
+    else:
+        return original
+
+
+async def safe_send(ctx, mes, overflow="\n... And more I couldn't fit in 1 message! ;O", sep='\n'):
+    mes = trunc_to_max_with_message(mes, overflow, sep, MAX_MSG_LENGTH)
+    await ctx.message.channel.send(mes)
 
 
 def main(token : str):

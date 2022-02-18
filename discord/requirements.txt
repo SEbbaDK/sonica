@@ -1,3 +1,4 @@
 grpcio
 discord.py
 typer
+google
