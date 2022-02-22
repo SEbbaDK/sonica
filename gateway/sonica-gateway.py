@@ -2,8 +2,7 @@
 
 import asyncio
 import websockets
-from typing import Dict, List
-import sys
+import typer
 import json
 import grpc
 import traceback
@@ -17,10 +16,7 @@ from methods import api_methods, api_method, ApiException
 
 verbose_mode = False
 
-@api_method("test", {"hej": int, "lol": [str]})
-def test(sonica, socket, value):
-    print("got test message", value)
-
+cli = typer.Typer()
 
 # TODO, sanitation on the stuff we return here?
 def handle_message(raw_msg, sonica, websocket):
@@ -28,7 +24,6 @@ def handle_message(raw_msg, sonica, websocket):
 
     try:
         message = validate({"channel": int, "type": str, "value": dict}, raw_msg)
-
     except ValidationException as e:
         error_resp["channel"] = raw_msg["channel"]
         error_resp["value"]["message"] = str(e)
@@ -59,11 +54,10 @@ def handle_message(raw_msg, sonica, websocket):
     return response
 
 
-async def main(sonica, host, port):
+async def server_start(sonica, host, port):
     print(f"Listening for websocket connections on {host}:{port}")
 
     async def echo(websocket, hello):
-        print("Got connection")
         async for message in websocket:
             if verbose_mode:
                 print("\nReceived: " + message)
@@ -92,17 +86,23 @@ async def main(sonica, host, port):
     async with websockets.serve(echo, host, port):
         await asyncio.Future()
 
-def program(daemon : str = "localhost:7700",
-			host : str = "localhost",
-			port : int = 7701,
-			verbose : bool = False,
-			):
+@cli.command()
+def cli(
+        sonica_host: str = "localhost",
+        sonica_port: int = 7700,
+        listen_host: str = "localhost",
+        listen_port: int = 7701,
+        verbose : bool = False
+        ):
     global verbose_mode
     verbose_mode = verbose
-    print(f"Connecting to daemon at {daemon}")
-    channel = grpc.insecure_channel(daemon)
+    address = f"{sonica_host}:{sonica_port}"
+    print(f"Connecting to daemon at {address}")
+    channel = grpc.insecure_channel(address)
     stub = SonicaStub(channel)
-    asyncio.run(main(stub, host, port))
+
+    asyncio.run(server_start(stub, listen_host, listen_port))
+
 
 if __name__ == "__main__":
-    typer.run(program)
+    typer.run(cli)
