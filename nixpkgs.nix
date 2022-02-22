@@ -1,6 +1,6 @@
 let
-    rev = "716815ce2a1fcb135843c7441648a59d62fb6eb6";
-    hash = "0qhjj4c6jx2s2da6zch2mfy0q7iwz3flpik4w4vw7bag3k26ia6k";
+    rev = "c03431640e3cc3c597f4d786f573970577709097";
+    hash = "0fqil5m81vc9dq2p44gczqx31zclk7knka3lq5j6cxpm4vlbb0r0";
 in
 import (fetchTarball {
     url = "https://github.com/nixos/nixpkgs/archive/${rev}.tar.gz";
