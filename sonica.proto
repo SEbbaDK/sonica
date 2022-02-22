@@ -96,6 +96,7 @@ message Status {
     	Song current = 1;
     	int32 length = 2;
     	int32 progress = 3;
+    	int32 state = 8; // Stopped : 1, Playing : 2, Paused : 3
 
     	int32 queue_length = 4;
     	int64 queue_hash = 5;
