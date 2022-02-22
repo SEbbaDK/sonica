@@ -46,7 +46,7 @@ class Sonica(SonicaServicer):
         self.choices = {}
 
     # Playback commands
-    
+
     def Play(self, request, context):
         try:
             self.playlist.play()

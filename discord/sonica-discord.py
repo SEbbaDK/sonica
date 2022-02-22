@@ -3,14 +3,22 @@
 import grpc
 import typer
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from sonica_pb2_grpc import SonicaStub
 from sonica_pb2 import Empty, Search, Status
 
 MAX_MSG_LENGTH = 2000
+PRESENCE_UPDATE_FREQUENCY = 5.0  # seconds
+current_presence = ""
 
 bot = commands.Bot(command_prefix='')
+
+
+@tasks.loop(seconds=PRESENCE_UPDATE_FREQUENCY)
+async def presence_loop_task():
+    await update_presence()
+
 
 def surround(surround, string):
     return f'{surround}{string}{surround}'
@@ -25,6 +33,8 @@ async def play(ctx):
         await ctx.message.channel.send(r.reason)
     else:
         await ctx.message.channel.send("Okie, i'll play")
+        if not presence_loop_task.is_running():
+            presence_loop_task.start()
         await update_presence()
 
 @bot.command()
@@ -34,7 +44,11 @@ async def stop(ctx):
         await ctx.message.channel.send(r.reason)
     else:
         await ctx.message.channel.send("Okie, i'll stop then :(")
+        if presence_loop_task.is_running():
+            presence_loop_task.cancel()
         await update_presence(no_presence=True)
+        global current_presence
+        current_presence = ""
 
 @bot.command()
 async def skip(ctx):
@@ -125,10 +139,15 @@ async def on_ready():
 
 async def update_presence(no_presence = False):
     if not no_presence:
+        global current_presence
         r = daemon.Status(Status.Query(queue_max=0, autoplay_max=0))
         song = r.current
-        game = discord.Game(f'{song.title} by {song.artist}')
-        await bot.change_presence(activity=game)
+        presence_text = f'{song.title} by {song.artist}'
+        if presence_text != current_presence:
+            current_presence = presence_text
+            # print(current_presence)
+            game = discord.Game(current_presence)
+            await bot.change_presence(activity=game)
     else:
         await bot.change_presence(activity=None)
 
@@ -152,5 +171,6 @@ def main(token : str):
     channel = grpc.insecure_channel('localhost:7700')
     daemon = SonicaStub(channel)
     bot.run(token)
+
 
 typer.run(main)
