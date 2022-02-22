@@ -124,7 +124,8 @@ class Playlist:
         self.enqueue(self.library.get_song(path), as_next)
 
     def get_unplayed(self, min_amount: int = 5):
-        if len(self.unplayed) < min_amount:
+        u_count = len(self.unplayed)
+        if u_count < min_amount and u_count < len(self.library.index):
             self.__refill()
         return self.unplayed
 

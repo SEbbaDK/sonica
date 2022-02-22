@@ -140,7 +140,9 @@ class Sonica(SonicaServicer):
 
     def Choose(self, request, context):
         id = request.possibility_id
+        print(f"Choose called with id {id}")
         if not id in self.choices:
+            print(f"No such id")
             return Result(success = False, reason = 'Not a valid possibilityid')
 
         c = self.choices[id]
@@ -205,7 +207,7 @@ def opts_to_map(opts: list[str]):
         m[engine][name] = v
     return m
 
-def load_engines(dirs : list[str], opts, library):
+def load_engines(dirs : list[str], opts, library, exclude = []):
     engines = []
     paths = [ os.path.abspath(os.path.expanduser(d)) for d in dirs ]
     for path in paths:
@@ -221,7 +223,11 @@ def load_engines(dirs : list[str], opts, library):
                 lib = item.replace(".py", "") # test_engine.py => test_engine
                 name = lib.replace("_engine", "") # test_engine => test
                 eclass = lib.title().replace("_", "") # test_engine => TestEngine
-                print(f"Loading {eclass} from {item}")
+                if lib in exclude or name in exclude or eclass in exclude:
+                    print(f"Skipping {eclass} because it was excluded")
+                    continue
+                else:
+                    print(f"Loading {eclass} from {item}")
 
                 # Loading the engine
                 eopts = opts[name] if name in opts else {}
@@ -235,7 +241,8 @@ def main(
         port : int = 7700,
         music_dir : str = 'music',
         engines_dir : list[str] = ['engines', '~/.config/sonicad/plugins'],
-        engine_opt : list[str] = typer.Option([], "--engine-opt", "-o", help="Additional options to parse on to an engine ie. engine:option=value")
+        engine_opt : list[str] = typer.Option([], "--engine-opt", "-o", help="Additional options to parse on to an engine ie. engine:option=value"),
+        exclude_engine : list[str] = typer.Option([], "--engine-exclude", "-e", help="Engines to not load"),
     ):
     if not os.path.exists(music_dir):
         print(f"Given music dir does not exist: »{music_dir}«", file=sys.stderr)
@@ -245,7 +252,7 @@ def main(
 
     engine_opts = opts_to_map(engine_opt)
     engines = sorted(
-        load_engines(engines_dir, engine_opts, library),
+        load_engines(engines_dir, engine_opts, library, exclude = exclude_engine),
         key = lambda e: e.rank,
     )
 
