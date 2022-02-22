@@ -2,8 +2,9 @@
 let
 	call = p: (import p) { inherit pkgs; };
 in
-{
+rec {
 	daemon = call ./daemon;
+	gateway = call ./gateway;
 
 	prepare = call ./prepare;
 

@@ -48,7 +48,7 @@ mkDerivation rec {
 		cp -r *.py engines $out/lib/
 
 		mkdir -p $out/bin
-		bin=$out/bin/sonicad
+		bin=$out/bin/sonica-daemon
 		echo -e "#!/bin/sh\nPATH=\"${pkgs.ffmpeg}/bin:\$PATH\"\n${pythonWithPackages}/bin/python $out/lib/sonica-daemon.py \$@" > $bin
 		chmod +x $bin
 	'';
