@@ -8,7 +8,7 @@ on daemon client: play pause restart next
 on daemon:
     status_query  -> status_answer
     search_query  -> search_result
-    choice        -> { choice_progress choice_finish error }
+    choice        -> { choice_progress+ choice_finish error }
     engines_query -> engine_list
     library       -> song_list
 
