@@ -31,7 +31,7 @@ class DeezerEngine(Engine):
             downloader = deemix.generateDownloadObject(
                 self.dz,
                 self.link,
-                TrackFormats.MP3_320
+                TrackFormats.MP3_128
             )
             self.dl = Downloader(self.dz, downloader, {
                 **deemix.settings.DEFAULTS,
