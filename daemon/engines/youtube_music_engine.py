@@ -14,7 +14,7 @@ def ydownload(url : str,
               title : str,
               artist : str,
               thumbnail : str):
-    filename = f'{title} - {artist}'
+    filename = f'{title} - {artist}'.replace("/", "_")
     downloaded = dir + filename + ".mp3"
 
     ytdl = YoutubeDL({
